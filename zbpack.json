@@ -1,4 +1,4 @@
 {
   "build_command": "npm run build",
-  "start_command": "node dist/index.cjs"
+  "start_command": "NODE_ENV=production node dist/index.cjs"
 }
