@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ThumbsUp, Send } from "lucide-react";
 import type { Comment } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/contexts/AuthContext";
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -23,6 +24,7 @@ interface CommentSectionProps {
 }
 
 export function CommentSection({ postId }: CommentSectionProps) {
+  const { user } = useAuth();
   const [newComment, setNewComment] = useState("");
 
   const { data: comments = [], isLoading } = useQuery<Comment[]>({
@@ -62,6 +64,12 @@ export function CommentSection({ postId }: CommentSectionProps) {
 
       {/* Comment input */}
       <form onSubmit={handleSubmit} className="mb-6">
+        {user && (
+          <div className="flex items-center gap-1.5 mb-2">
+            <span className="text-sm">{user.avatar}</span>
+            <span className="text-xs font-bold text-primary">{user.displayName}</span>
+          </div>
+        )}
         <div className="flex gap-2">
           <textarea
             value={newComment}
@@ -79,7 +87,7 @@ export function CommentSection({ postId }: CommentSectionProps) {
             data-testid="comment-submit"
           >
             <Send className="w-3 h-3" />
-            匿名發表
+            {user ? "發表" : "匿名發表"}
           </button>
         </div>
       </form>
@@ -109,7 +117,7 @@ export function CommentSection({ postId }: CommentSectionProps) {
               >
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xs font-bold text-primary font-mono">
-                    {comment.nickname}
+                    {comment.displayName || comment.nickname}
                   </span>
                   <span className="text-[10px] text-muted-foreground font-mono">
                     {timeAgo(comment.createdAt)}

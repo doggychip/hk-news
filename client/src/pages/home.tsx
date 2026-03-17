@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronUp } from "lucide-react";
+import { ChevronUp, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Post } from "@shared/schema";
 import { Logo } from "@/components/Logo";
@@ -9,13 +9,20 @@ import { PostCard } from "@/components/PostCard";
 import { HotTicker } from "@/components/HotTicker";
 import { SearchBar } from "@/components/SearchBar";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { UserMenu } from "@/components/UserMenu";
+import { CreatePostModal } from "@/components/CreatePostModal";
+import { AuthModal } from "@/components/AuthModal";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
+import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function HomePage() {
+  const { user } = useAuth();
   const [category, setCategory] = useState("");
   const [search, setSearch] = useState("");
   const [showScroll, setShowScroll] = useState(false);
+  const [showCreatePost, setShowCreatePost] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
 
   const { data: posts = [], isLoading } = useQuery<Post[]>({
     queryKey: ["/api/posts", category, search],
@@ -41,6 +48,14 @@ export default function HomePage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
+  const handleCreatePost = () => {
+    if (user) {
+      setShowCreatePost(true);
+    } else {
+      setShowAuth(true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -56,6 +71,7 @@ export default function HomePage() {
           <div className="flex items-center gap-1">
             <SearchBar onSearch={setSearch} />
             <ThemeToggle />
+            <UserMenu onCreatePost={handleCreatePost} />
           </div>
         </div>
       </header>
@@ -97,6 +113,17 @@ export default function HomePage() {
         </div>
       </main>
 
+      {/* Floating create post button */}
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={handleCreatePost}
+        className="fixed bottom-20 right-6 z-50 w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg neon-glow-pink"
+        data-testid="create-post-fab"
+      >
+        <Plus className="w-6 h-6" />
+      </motion.button>
+
       {/* Scroll to top */}
       <AnimatePresence>
         {showScroll && (
@@ -105,13 +132,17 @@ export default function HomePage() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={scrollToTop}
-            className="fixed bottom-6 right-6 z-50 w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg hover:bg-primary/90 transition-colors"
+            className="fixed bottom-6 right-6 z-50 w-10 h-10 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center shadow-lg hover:bg-secondary/90 transition-colors"
             data-testid="scroll-to-top"
           >
             <ChevronUp className="w-5 h-5" />
           </motion.button>
         )}
       </AnimatePresence>
+
+      {/* Modals */}
+      <CreatePostModal open={showCreatePost} onClose={() => setShowCreatePost(false)} />
+      <AuthModal open={showAuth} onClose={() => setShowAuth(false)} />
     </div>
   );
 }

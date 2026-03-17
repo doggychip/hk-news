@@ -130,7 +130,7 @@ export default function PostDetail() {
             <span className="text-sm">📋</span>
             <span className="text-xs font-bold text-primary">30秒懶人包</span>
           </div>
-          <p className="text-sm text-foreground/90 leading-relaxed">{post.summary}</p>
+          <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">{post.summary}</p>
         </div>
 
         {/* Full content */}

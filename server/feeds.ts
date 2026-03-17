@@ -1,5 +1,6 @@
 import RSSParser from "rss-parser";
 import type { Post, Category, Reactions } from "@shared/schema";
+import { generateSummary } from "./summarizer";
 
 const parser = new RSSParser({
   timeout: 10000,
@@ -17,12 +18,14 @@ export interface FeedSource {
 
 export const FEED_SOURCES: FeedSource[] = [
   { name: "東方日報娛樂", url: "https://orientaldaily.on.cc/rss/entertainment.xml", category: "娛樂" },
-  { name: "香港01 娛樂", url: "https://www.hk01.com/rss/channel/2", category: "娛樂" },
-  { name: "香港01 熱爆話題", url: "https://www.hk01.com/rss/channel/39", category: "吹水" },
   { name: "RTHK 港聞", url: "https://rthk.hk/rthk/news/rss/c_expressnews_clocal.xml", category: "時事" },
   { name: "明報即時", url: "https://news.mingpao.com/rss/ins/s00001.xml", category: "時事" },
   { name: "Unwire.hk", url: "https://unwire.hk/feed/", category: "科技" },
-  { name: "HKET 科技", url: "https://inews.hket.com/rss/INews/%E7%A7%91%E6%8A%80", category: "科技" },
+  { name: "東方日報 港聞", url: "https://orientaldaily.on.cc/rss/news.xml", category: "時事" },
+  { name: "東周刊", url: "https://eastweek.stheadline.com/rss", category: "娛樂" },
+  { name: "東方新地", url: "https://orientalsunday.hk/feed", category: "娛樂" },
+  { name: "巴士的報", url: "https://www.bastillepost.com/hongkong/feed", category: "吹水" },
+  { name: "RTHK 財經", url: "https://rthk.hk/rthk/news/rss/c_expressnews_cfinance.xml", category: "時事" },
 ];
 
 function generateHeat(pubDate?: string): number {
@@ -81,7 +84,7 @@ export async function fetchFeeds(): Promise<Omit<Post, "id">[]> {
 
         const rawContent = item["content:encoded"] || item.content || item.contentSnippet || "";
         const content = stripHtml(rawContent);
-        const summary = content.slice(0, 80) + (content.length > 80 ? "..." : "");
+        const summary = generateSummary(title, content);
         const pubDate = item.pubDate || item.isoDate;
 
         results.push({

@@ -2,7 +2,17 @@ import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { fetchFeeds } from "./feeds";
-import { insertCommentSchema, reactSchema } from "@shared/schema";
+import { insertCommentSchema, reactSchema, insertUserSchema, loginSchema, insertPostSchema } from "@shared/schema";
+import type { User } from "@shared/schema";
+
+async function getAuthUser(req: any): Promise<User | null> {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith('Bearer ')) return null;
+  const token = auth.slice(7);
+  const session = await storage.getSession(token);
+  if (!session) return null;
+  return await storage.getUserById(session.userId) ?? null;
+}
 
 let lastFetchTime = 0;
 const FETCH_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -76,9 +86,12 @@ export async function registerRoutes(server: Server, app: Express) {
     if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
 
     const post = await storage.getPostById(id);
-    if (!post) return res.status(404).json({ message: "Post not found" });
+    if (!post) return res.status(404).json({ message: "搵唔到呢個帖子" });
 
-    const comment = await storage.addComment(id, parsed.data.content);
+    const user = await getAuthUser(req);
+    const comment = user
+      ? await storage.addComment(id, parsed.data.content, user.id, user.displayName)
+      : await storage.addComment(id, parsed.data.content);
     res.status(201).json(comment);
   });
 
@@ -94,5 +107,92 @@ export async function registerRoutes(server: Server, app: Express) {
     await ensureFreshData();
     const posts = await storage.getPosts();
     res.json({ count: posts.length, message: "已更新" });
+  });
+
+  // POST /api/auth/register - create account
+  app.post("/api/auth/register", async (req, res) => {
+    const parsed = insertUserSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.errors[0]?.message || "輸入資料有誤" });
+
+    const existing = await storage.getUserByUsername(parsed.data.username);
+    if (existing) return res.status(409).json({ message: "用戶名已被使用" });
+
+    const user = await storage.createUser(parsed.data.username, parsed.data.displayName, parsed.data.avatar);
+    const session = await storage.createSession(user.id);
+    res.status(201).json({ user, token: session.id });
+  });
+
+  // POST /api/auth/login - login
+  app.post("/api/auth/login", async (req, res) => {
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "請輸入用戶名" });
+
+    const user = await storage.getUserByUsername(parsed.data.username);
+    if (!user) return res.status(404).json({ message: "搵唔到呢個用戶" });
+
+    const session = await storage.createSession(user.id);
+    res.json({ user, token: session.id });
+  });
+
+  // GET /api/auth/me - get current user
+  app.get("/api/auth/me", async (req, res) => {
+    const user = await getAuthUser(req);
+    if (!user) return res.status(401).json({ message: "未登入" });
+    res.json(user);
+  });
+
+  // POST /api/auth/logout - logout
+  app.post("/api/auth/logout", async (req, res) => {
+    const auth = req.headers.authorization;
+    if (auth?.startsWith('Bearer ')) {
+      const token = auth.slice(7);
+      await storage.deleteSession(token);
+    }
+    res.json({ message: "已登出" });
+  });
+
+  // GET /api/users/:id - get user profile
+  app.get("/api/users/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "無效嘅用戶ID" });
+
+    const user = await storage.getUserById(id);
+    if (!user) return res.status(404).json({ message: "搵唔到呢個用戶" });
+    res.json(user);
+  });
+
+  // GET /api/users/:id/posts - user's posts
+  app.get("/api/users/:id/posts", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "無效嘅用戶ID" });
+
+    const posts = await storage.getUserPosts(id);
+    res.json(posts);
+  });
+
+  // GET /api/users/:id/comments - user's comments
+  app.get("/api/users/:id/comments", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "無效嘅用戶ID" });
+
+    const comments = await storage.getUserComments(id);
+    res.json(comments);
+  });
+
+  // POST /api/posts - create user post (requires auth)
+  app.post("/api/posts", async (req, res) => {
+    const user = await getAuthUser(req);
+    if (!user) return res.status(401).json({ message: "請先登入" });
+
+    const parsed = insertPostSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.errors[0]?.message || "輸入資料有誤" });
+
+    const post = await storage.createPost({
+      title: parsed.data.title,
+      content: parsed.data.content,
+      category: parsed.data.category,
+      userId: user.id,
+    });
+    res.status(201).json(post);
   });
 }

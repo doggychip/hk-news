@@ -1,4 +1,6 @@
-import type { Post, Comment, Category, Reactions, ReactionType } from "@shared/schema";
+import type { Post, Comment, Category, Reactions, ReactionType, User, Session } from "@shared/schema";
+import { generateSummary } from "./summarizer";
+import crypto from "crypto";
 
 export interface IStorage {
   getPosts(category?: string, search?: string): Promise<Post[]>;
@@ -6,10 +8,20 @@ export interface IStorage {
   addPosts(posts: Omit<Post, "id">[]): Promise<Post[]>;
   addReaction(postId: number, type: ReactionType): Promise<Post | undefined>;
   getComments(postId: number): Promise<Comment[]>;
-  addComment(postId: number, content: string): Promise<Comment>;
+  addComment(postId: number, content: string, userId?: number, displayName?: string): Promise<Comment>;
   likeComment(commentId: number): Promise<Comment | undefined>;
   getTrending(): Promise<Post[]>;
   clearPosts(): Promise<void>;
+  createUser(username: string, displayName: string, avatar: string): Promise<User>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserById(id: number): Promise<User | undefined>;
+  createSession(userId: number): Promise<Session>;
+  getSession(sessionId: string): Promise<Session | undefined>;
+  deleteSession(sessionId: string): Promise<void>;
+  getUserPosts(userId: number): Promise<Post[]>;
+  getUserComments(userId: number): Promise<Comment[]>;
+  createPost(post: { title: string; content: string; category: string; userId: number }): Promise<Post>;
+  incrementUserKarma(userId: number, points: number): Promise<void>;
 }
 
 // Anonymous nickname generator
@@ -30,12 +42,17 @@ function generateNickname(): string {
 export class MemStorage implements IStorage {
   private posts: Map<number, Post>;
   private comments: Map<number, Comment>;
+  private users: Map<number, User>;
+  private sessions: Map<string, Session>;
   private nextPostId: number;
   private nextCommentId: number;
+  private nextUserId: number = 1;
 
   constructor() {
     this.posts = new Map();
     this.comments = new Map();
+    this.users = new Map();
+    this.sessions = new Map();
     this.nextPostId = 1;
     this.nextCommentId = 1;
     this.seedMockData();
@@ -333,10 +350,11 @@ export class MemStorage implements IStorage {
       },
     ];
 
-    // Assign and store posts
+    // Assign and store posts with generated summaries
     for (const post of mockPosts) {
       const id = this.nextPostId++;
-      this.posts.set(id, { ...post, id });
+      const summary = generateSummary(post.title, post.content);
+      this.posts.set(id, { ...post, id, summary });
     }
 
     // Add some mock comments
@@ -425,15 +443,17 @@ export class MemStorage implements IStorage {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
-  async addComment(postId: number, content: string): Promise<Comment> {
+  async addComment(postId: number, content: string, userId?: number, displayName?: string): Promise<Comment> {
     const id = this.nextCommentId++;
     const comment: Comment = {
       id,
       postId,
-      nickname: generateNickname(),
+      nickname: displayName ?? generateNickname(),
       content,
       createdAt: new Date().toISOString(),
       likes: 0,
+      userId,
+      displayName,
     };
     this.comments.set(id, comment);
     // Increase comment count on post
@@ -441,6 +461,15 @@ export class MemStorage implements IStorage {
     if (post) {
       post.commentCount++;
       this.posts.set(postId, post);
+    }
+    // Increment user karma and comment count
+    if (userId) {
+      const user = this.users.get(userId);
+      if (user) {
+        user.commentCount++;
+        user.karmaPoints += 1;
+        this.users.set(userId, user);
+      }
     }
     return comment;
   }
@@ -462,6 +491,95 @@ export class MemStorage implements IStorage {
   async clearPosts(): Promise<void> {
     this.posts.clear();
     this.nextPostId = 1;
+  }
+
+  async createUser(username: string, displayName: string, avatar: string): Promise<User> {
+    const id = this.nextUserId++;
+    const user: User = {
+      id,
+      username,
+      displayName,
+      avatar,
+      joinedAt: new Date().toISOString(),
+      postCount: 0,
+      commentCount: 0,
+      karmaPoints: 0,
+    };
+    this.users.set(id, user);
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find((u) => u.username === username);
+  }
+
+  async getUserById(id: number): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+
+  async createSession(userId: number): Promise<Session> {
+    const session: Session = {
+      id: crypto.randomUUID(),
+      userId,
+      createdAt: new Date().toISOString(),
+    };
+    this.sessions.set(session.id, session);
+    return session;
+  }
+
+  async getSession(sessionId: string): Promise<Session | undefined> {
+    return this.sessions.get(sessionId);
+  }
+
+  async deleteSession(sessionId: string): Promise<void> {
+    this.sessions.delete(sessionId);
+  }
+
+  async getUserPosts(userId: number): Promise<Post[]> {
+    return Array.from(this.posts.values())
+      .filter((p) => p.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async getUserComments(userId: number): Promise<Comment[]> {
+    return Array.from(this.comments.values())
+      .filter((c) => c.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async createPost(post: { title: string; content: string; category: string; userId: number }): Promise<Post> {
+    const id = this.nextPostId++;
+    const newPost: Post = {
+      id,
+      title: post.title,
+      content: post.content,
+      summary: generateSummary(post.title, post.content),
+      category: post.category as Category,
+      source: "用戶投稿",
+      sourceUrl: "",
+      heat: 50,
+      commentCount: 0,
+      createdAt: new Date().toISOString(),
+      reactions: { fire: 0, shocked: 0, laughing: 0, skull: 0, heart: 0 },
+      userId: post.userId,
+    };
+    this.posts.set(id, newPost);
+    // Increment user stats
+    const user = this.users.get(post.userId);
+    if (user) {
+      user.postCount++;
+      user.karmaPoints += 5;
+      this.users.set(post.userId, user);
+    }
+    return newPost;
+  }
+
+  async incrementUserKarma(userId: number, points: number): Promise<void> {
+    const user = this.users.get(userId);
+    if (user) {
+      user.karmaPoints += points;
+      this.users.set(userId, user);
+    }
   }
 }
 
