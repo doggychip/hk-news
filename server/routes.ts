@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
-import { fetchFeeds, FEED_SOURCES } from "./feeds";
+import { fetchFeeds } from "./feeds";
+import { insertCommentSchema, reactSchema } from "@shared/schema";
 
 let lastFetchTime = 0;
 const FETCH_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -9,13 +10,13 @@ const FETCH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 async function ensureFreshData() {
   const now = Date.now();
   if (now - lastFetchTime < FETCH_INTERVAL) return;
-  
-  console.log("Fetching fresh news feeds...");
+
+  console.log("Fetching fresh RSS feeds...");
   try {
-    const articles = await fetchFeeds();
-    await storage.addArticles(articles);
+    const posts = await fetchFeeds();
+    await storage.addPosts(posts);
     lastFetchTime = now;
-    console.log(`Fetched ${articles.length} articles from ${FEED_SOURCES.length} sources`);
+    console.log(`Fetched ${posts.length} posts from RSS feeds`);
   } catch (error) {
     console.error("Failed to fetch feeds:", error);
   }
@@ -25,53 +26,73 @@ export async function registerRoutes(server: Server, app: Express) {
   // Initial feed fetch
   ensureFreshData();
 
-  // Get articles with optional category and search filter
-  app.get("/api/articles", async (req, res) => {
+  // GET /api/posts - list posts with optional category filter
+  app.get("/api/posts", async (req, res) => {
     await ensureFreshData();
     const { category, search } = req.query;
-    const articles = await storage.getArticles(
+    const posts = await storage.getPosts(
       category as string | undefined,
       search as string | undefined
     );
-    res.json(articles);
+    res.json(posts);
   });
 
-  // Get single article
-  app.get("/api/articles/:id", async (req, res) => {
+  // GET /api/posts/:id - get single post
+  app.get("/api/posts/:id", async (req, res) => {
     const id = parseInt(req.params.id);
-    const article = await storage.getArticleById(id);
-    if (!article) {
-      return res.status(404).json({ message: "Article not found" });
-    }
-    res.json(article);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    const post = await storage.getPostById(id);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+    res.json(post);
   });
 
-  // Toggle bookmark
-  app.post("/api/articles/:id/bookmark", async (req, res) => {
+  // POST /api/posts/:id/react - add a reaction
+  app.post("/api/posts/:id/react", async (req, res) => {
     const id = parseInt(req.params.id);
-    const article = await storage.toggleBookmark(id);
-    if (!article) {
-      return res.status(404).json({ message: "Article not found" });
-    }
-    res.json(article);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+
+    const parsed = reactSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid reaction type" });
+
+    const post = await storage.addReaction(id, parsed.data.type);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+    res.json(post);
   });
 
-  // Get bookmarked articles
-  app.get("/api/bookmarks", async (req, res) => {
-    const articles = await storage.getBookmarkedArticles();
-    res.json(articles);
+  // GET /api/posts/:id/comments - list comments
+  app.get("/api/posts/:id/comments", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    const comments = await storage.getComments(id);
+    res.json(comments);
   });
 
-  // Get available sources
-  app.get("/api/sources", async (_req, res) => {
-    res.json(FEED_SOURCES);
+  // POST /api/posts/:id/comments - add comment
+  app.post("/api/posts/:id/comments", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+
+    const parsed = insertCommentSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+
+    const post = await storage.getPostById(id);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    const comment = await storage.addComment(id, parsed.data.content);
+    res.status(201).json(comment);
   });
 
-  // Force refresh feeds
+  // GET /api/trending - top 10 by heat
+  app.get("/api/trending", async (_req, res) => {
+    const trending = await storage.getTrending();
+    res.json(trending);
+  });
+
+  // POST /api/refresh - re-fetch RSS feeds
   app.post("/api/refresh", async (_req, res) => {
     lastFetchTime = 0;
     await ensureFreshData();
-    const articles = await storage.getArticles();
-    res.json({ count: articles.length, message: "已更新" });
+    const posts = await storage.getPosts();
+    res.json({ count: posts.length, message: "已更新" });
   });
 }

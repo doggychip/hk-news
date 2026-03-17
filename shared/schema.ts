@@ -1,32 +1,53 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const articles = pgTable("articles", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  link: text("link").notNull(),
-  description: text("description"),
-  summary: text("summary"),
-  source: text("source").notNull(),
-  category: text("category").notNull(),
-  pubDate: text("pub_date"),
-  imageUrl: text("image_url"),
-  isBookmarked: boolean("is_bookmarked").default(false),
-});
-
-export const insertArticleSchema = createInsertSchema(articles).omit({ id: true });
-export type InsertArticle = z.infer<typeof insertArticleSchema>;
-export type Article = typeof articles.$inferSelect;
-
-// Category type
-export const CATEGORIES = ["全部", "港聞", "財經", "加密貨幣", "國際", "體育", "科技", "社交熱話"] as const;
+// Categories
+export const CATEGORIES = ["熱門", "吹水", "娛樂", "時事", "返工", "感情", "飲食", "科技"] as const;
 export type Category = typeof CATEGORIES[number];
 
-// Source definitions
-export interface FeedSource {
-  name: string;
-  url: string;
-  category: string;
-  language: string;
+// Reactions type
+export interface Reactions {
+  fire: number;
+  shocked: number;
+  laughing: number;
+  skull: number;
+  heart: number;
 }
+
+export type ReactionType = keyof Reactions;
+
+// Post
+export interface Post {
+  id: number;
+  title: string;
+  content: string;
+  summary: string;
+  category: Category;
+  source: string;
+  sourceUrl: string;
+  imageUrl?: string;
+  heat: number;
+  commentCount: number;
+  createdAt: string;
+  reactions: Reactions;
+}
+
+// Comment
+export interface Comment {
+  id: number;
+  postId: number;
+  nickname: string;
+  content: string;
+  createdAt: string;
+  likes: number;
+}
+
+// Insert types
+export const insertCommentSchema = z.object({
+  content: z.string().min(1, "請輸入內容").max(500, "最多500字"),
+});
+export type InsertComment = z.infer<typeof insertCommentSchema>;
+
+export const reactSchema = z.object({
+  type: z.enum(["fire", "shocked", "laughing", "skull", "heart"]),
+});
+export type ReactInput = z.infer<typeof reactSchema>;

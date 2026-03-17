@@ -1,47 +1,51 @@
-import type { FeedSource, InsertArticle } from "@shared/schema";
+import RSSParser from "rss-parser";
+import type { Post, Category, Reactions } from "@shared/schema";
 
-// HK News RSS Feed Sources
-export const FEED_SOURCES: FeedSource[] = [
-  // 港聞 (Local HK News)
-  { name: "香港電台", url: "https://rthk.hk/rthk/news/rss/c_expressnews_clocal.xml", category: "港聞", language: "zh" },
-  { name: "明報", url: "https://news.mingpao.com/rss/pns/s00002.xml", category: "港聞", language: "zh" },
-  { name: "香港經濟日報", url: "https://www.hket.com/rss/hongkong", category: "港聞", language: "zh" },
-  { name: "南華早報", url: "https://www.scmp.com/rss/2/feed", category: "港聞", language: "en" },
-  { name: "巴士的報", url: "https://www.bastillepost.com/hongkong/feed", category: "港聞", language: "zh" },
-  { name: "政府新聞網", url: "https://www.news.gov.hk/tc/common/html/topstories.rss.xml", category: "港聞", language: "zh" },
-  
-  // 財經 (Finance)
-  { name: "香港電台財經", url: "https://rthk.hk/rthk/news/rss/c_expressnews_cfinance.xml", category: "財經", language: "zh" },
-  { name: "經濟通", url: "https://www.etnet.com.hk/www/tc/news/rss.php?section=editor", category: "財經", language: "zh" },
-  { name: "信報", url: "https://www.hkej.com/rss/onlinenews.xml", category: "財經", language: "zh" },
-  { name: "AAStocks", url: "https://www.aastocks.com/tc/resources/datafeed/rss/leading/aafn_cn.xml", category: "財經", language: "zh" },
-  { name: "香港經濟日報財經", url: "https://www.hket.com/rss/finance", category: "財經", language: "zh" },
-  
-  // 國際 (International)
-  { name: "香港電台國際", url: "https://rthk.hk/rthk/news/rss/c_expressnews_cinternational.xml", category: "國際", language: "zh" },
-  { name: "香港電台大中華", url: "https://rthk.hk/rthk/news/rss/c_expressnews_greaterchina.xml", category: "國際", language: "zh" },
-  
-  // 體育 (Sports)
-  { name: "香港電台體育", url: "https://rthk.hk/rthk/news/rss/c_expressnews_csport.xml", category: "體育", language: "zh" },
-  
-  // 科技 (Tech)
-  { name: "香港經濟日報科技", url: "https://www.hket.com/rss/technology", category: "科技", language: "zh" },
-  { name: "Unwire.hk", url: "https://unwire.hk/feed/", category: "科技", language: "zh" },
-  
-  // 加密貨幣 (Crypto / Web3)
-  { name: "CoinDesk", url: "https://www.coindesk.com/arc/outboundfeeds/rss/", category: "加密貨幣", language: "en" },
-  { name: "鏈新聞", url: "https://abmedia.io/feed", category: "加密貨幣", language: "zh" },
-  { name: "Blockchain News", url: "https://blockchain.news/rss", category: "加密貨幣", language: "en" },
-];
+const parser = new RSSParser({
+  timeout: 10000,
+  headers: {
+    "User-Agent": "CheuiSui/1.0",
+    Accept: "application/rss+xml, application/xml, text/xml",
+  },
+});
 
-function extractImageFromContent(content: string | undefined): string | null {
-  if (!content) return null;
-  const imgMatch = content.match(/<img[^>]+src=["']([^"']+)["']/i);
-  return imgMatch ? imgMatch[1] : null;
+export interface FeedSource {
+  name: string;
+  url: string;
+  category: Category;
 }
 
-function cleanHtml(html: string | undefined): string {
-  if (!html) return "";
+export const FEED_SOURCES: FeedSource[] = [
+  { name: "東方日報娛樂", url: "https://orientaldaily.on.cc/rss/entertainment.xml", category: "娛樂" },
+  { name: "香港01 娛樂", url: "https://www.hk01.com/rss/channel/2", category: "娛樂" },
+  { name: "香港01 熱爆話題", url: "https://www.hk01.com/rss/channel/39", category: "吹水" },
+  { name: "RTHK 港聞", url: "https://rthk.hk/rthk/news/rss/c_expressnews_clocal.xml", category: "時事" },
+  { name: "明報即時", url: "https://news.mingpao.com/rss/ins/s00001.xml", category: "時事" },
+  { name: "Unwire.hk", url: "https://unwire.hk/feed/", category: "科技" },
+  { name: "HKET 科技", url: "https://inews.hket.com/rss/INews/%E7%A7%91%E6%8A%80", category: "科技" },
+];
+
+function generateHeat(pubDate?: string): number {
+  if (!pubDate) return Math.floor(Math.random() * 40) + 30;
+  const ageMs = Date.now() - new Date(pubDate).getTime();
+  const ageHours = ageMs / (1000 * 60 * 60);
+  // Newer = hotter, cap at 85 for RSS content (mock content gets higher)
+  const recency = Math.max(0, 85 - ageHours * 4);
+  const engagement = Math.random() * 20;
+  return Math.min(85, Math.max(10, Math.floor(recency + engagement)));
+}
+
+function generateReactions(): Reactions {
+  return {
+    fire: Math.floor(Math.random() * 200),
+    shocked: Math.floor(Math.random() * 100),
+    laughing: Math.floor(Math.random() * 80),
+    skull: Math.floor(Math.random() * 60),
+    heart: Math.floor(Math.random() * 150),
+  };
+}
+
+function stripHtml(html: string): string {
   return html
     .replace(/<[^>]*>/g, "")
     .replace(/&nbsp;/g, " ")
@@ -50,49 +54,55 @@ function cleanHtml(html: string | undefined): string {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
-    .trim()
-    .slice(0, 500);
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-export async function fetchFeeds(): Promise<InsertArticle[]> {
-  const RssParser = (await import("rss-parser")).default;
-  const parser = new RssParser({
-    timeout: 10000,
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (compatible; HKNewsAggregator/1.0)',
-      'Accept': 'application/rss+xml, application/xml, text/xml, */*',
-    },
-  });
+function extractImageUrl(item: any): string | undefined {
+  if (item.enclosure?.url) return item.enclosure.url;
+  if (item["media:content"]?.["$"]?.url) return item["media:content"]["$"].url;
+  // Try to extract from content
+  const content = item["content:encoded"] || item.content || "";
+  const match = content.match(/<img[^>]+src=["']([^"']+)["']/);
+  return match?.[1] || undefined;
+}
 
-  const allArticles: InsertArticle[] = [];
+export async function fetchFeeds(): Promise<Omit<Post, "id">[]> {
+  const results: Omit<Post, "id">[] = [];
 
   const feedPromises = FEED_SOURCES.map(async (source) => {
     try {
       const feed = await parser.parseURL(source.url);
-      const articles: InsertArticle[] = (feed.items || []).slice(0, 15).map((item) => ({
-        title: item.title || "無標題",
-        link: item.link || "",
-        description: cleanHtml(item.contentSnippet || item.content || item.summary || ""),
-        summary: null,
-        source: source.name,
-        category: source.category,
-        pubDate: item.pubDate || item.isoDate || new Date().toISOString(),
-        imageUrl: item.enclosure?.url || extractImageFromContent(item.content || item["content:encoded"]) || null,
-        isBookmarked: false,
-      }));
-      return articles;
+      const items = (feed.items || []).slice(0, 10);
+
+      for (const item of items) {
+        const title = item.title?.trim();
+        if (!title) continue;
+
+        const rawContent = item["content:encoded"] || item.content || item.contentSnippet || "";
+        const content = stripHtml(rawContent);
+        const summary = content.slice(0, 80) + (content.length > 80 ? "..." : "");
+        const pubDate = item.pubDate || item.isoDate;
+
+        results.push({
+          title,
+          content: content || title,
+          summary,
+          category: source.category,
+          source: source.name,
+          sourceUrl: item.link || source.url,
+          imageUrl: extractImageUrl(item),
+          heat: generateHeat(pubDate),
+          commentCount: Math.floor(Math.random() * 300),
+          createdAt: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
+          reactions: generateReactions(),
+        });
+      }
     } catch (error) {
-      console.error(`Failed to fetch ${source.name} (${source.url}):`, (error as Error).message);
-      return [];
+      console.error(`Failed to fetch ${source.name} (${source.url}):`, error instanceof Error ? error.message : error);
     }
   });
 
-  const results = await Promise.allSettled(feedPromises);
-  for (const result of results) {
-    if (result.status === "fulfilled") {
-      allArticles.push(...result.value);
-    }
-  }
-
-  return allArticles;
+  await Promise.allSettled(feedPromises);
+  return results;
 }
