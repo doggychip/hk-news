@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronUp, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,8 +13,31 @@ import { UserMenu } from "@/components/UserMenu";
 import { CreatePostModal } from "@/components/CreatePostModal";
 import { AuthModal } from "@/components/AuthModal";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
+import { MemeOfTheDay } from "@/components/MemeOfTheDay";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest } from "@/lib/queryClient";
+
+const IRONIC_LOADING = [
+  "連登仔正在加載中...",
+  "巴打請等等，膠都要時間黐...",
+  "Loading緊，唔好急，急你就輸咗",
+  "幫緊你幫緊你...",
+  "正在搵緊啲膠嘢...",
+  "SLDPK Loading...",
+];
+
+const EASTER_EGGS = [
+  "「我覺得我哋可以理性討論」",
+  "「來都來了」",
+  "67 67 67",
+  "「感建分」",
+  "「膠都唔想黐」",
+  "「影到我plz del」",
+];
+
+function getRandomItem<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -23,6 +46,9 @@ export default function HomePage() {
   const [showScroll, setShowScroll] = useState(false);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [easterEgg, setEasterEgg] = useState<string | null>(null);
+  const easterEggTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollCount = useRef(0);
 
   const { data: posts = [], isLoading } = useQuery<Post[]>({
     queryKey: ["/api/posts", category, search],
@@ -39,10 +65,21 @@ export default function HomePage() {
   useEffect(() => {
     const handleScroll = () => {
       setShowScroll(window.scrollY > 400);
+
+      // Easter egg: show random meme phrase after every ~15 scroll events
+      scrollCount.current++;
+      if (scrollCount.current % 15 === 0 && !easterEgg) {
+        setEasterEgg(getRandomItem(EASTER_EGGS));
+        if (easterEggTimer.current) clearTimeout(easterEggTimer.current);
+        easterEggTimer.current = setTimeout(() => setEasterEgg(null), 2500);
+      }
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (easterEggTimer.current) clearTimeout(easterEggTimer.current);
+    };
+  }, [easterEgg]);
 
   const scrollToTop = useCallback(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -56,6 +93,8 @@ export default function HomePage() {
     }
   };
 
+  const loadingMsg = getRandomItem(IRONIC_LOADING);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -64,7 +103,7 @@ export default function HomePage() {
           <div className="flex items-center gap-2">
             <Logo size={28} className="text-primary neon-text-pink" />
             <div>
-              <h1 className="text-base font-black leading-none text-foreground">吹水台</h1>
+              <h1 className="text-base font-black leading-none text-foreground glitch-text">吹水台</h1>
               <p className="text-[9px] text-muted-foreground font-mono tracking-wider">CHEUISUI</p>
             </div>
           </div>
@@ -79,6 +118,9 @@ export default function HomePage() {
       {/* Hot Ticker */}
       <HotTicker />
 
+      {/* Meme of the Day */}
+      <MemeOfTheDay />
+
       {/* Category Tabs */}
       <div className="sticky top-[57px] z-40 bg-background/90 backdrop-blur-md border-b border-border">
         <div className="max-w-2xl mx-auto px-3">
@@ -90,6 +132,9 @@ export default function HomePage() {
       <main className="max-w-2xl mx-auto px-3 py-4">
         {isLoading ? (
           <div className="space-y-3">
+            <p className="text-center text-muted-foreground text-xs font-mono py-2 animate-pulse">
+              {loadingMsg}
+            </p>
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="skeleton-shimmer h-32 rounded-lg" />
             ))}
@@ -112,6 +157,20 @@ export default function HomePage() {
           <PerplexityAttribution />
         </div>
       </main>
+
+      {/* Easter egg floating message */}
+      <AnimatePresence>
+        {easterEgg && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 0.9, y: 0 }}
+            exit={{ opacity: 0, y: -30 }}
+            className="fixed bottom-32 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-card/90 border border-primary/30 rounded-lg text-xs font-bold text-primary neon-text-pink pointer-events-none"
+          >
+            {easterEgg}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Floating create post button */}
       <motion.button

@@ -4,13 +4,14 @@ import { z } from "zod";
 export const CATEGORIES = ["熱門", "吹水", "娛樂", "時事", "返工", "感情", "飲食", "科技"] as const;
 export type Category = typeof CATEGORIES[number];
 
-// Reactions type
+// Reactions type — HK meme reactions
 export interface Reactions {
   fire: number;
-  shocked: number;
-  laughing: number;
-  skull: number;
-  heart: number;
+  cringe: number;
+  rofl: number;
+  dead: number;
+  chill: number;
+  rage: number;
 }
 
 export type ReactionType = keyof Reactions;
@@ -70,7 +71,7 @@ export const insertCommentSchema = z.object({
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 
 export const reactSchema = z.object({
-  type: z.enum(["fire", "shocked", "laughing", "skull", "heart"]),
+  type: z.enum(["fire", "cringe", "rofl", "dead", "chill", "rage"]),
 });
 export type ReactInput = z.infer<typeof reactSchema>;
 

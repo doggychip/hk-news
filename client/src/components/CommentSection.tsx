@@ -1,10 +1,19 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ThumbsUp, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import type { Comment } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/AuthContext";
+import { StickerPicker, renderStickers } from "./StickerPicker";
+
+const COMMENT_REACTIONS = [
+  { emoji: "👍", label: "推" },
+  { emoji: "👎", label: "沉" },
+  { emoji: "😂", label: "笑死" },
+  { emoji: "💀", label: "RIP" },
+  { emoji: "🍿", label: "食花生" },
+];
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -26,6 +35,8 @@ interface CommentSectionProps {
 export function CommentSection({ postId }: CommentSectionProps) {
   const { user } = useAuth();
   const [newComment, setNewComment] = useState("");
+  // Track local comment reaction counts (in-memory only)
+  const [commentReactions, setCommentReactions] = useState<Record<number, Record<string, number>>>({});
 
   const { data: comments = [], isLoading } = useQuery<Comment[]>({
     queryKey: ["/api/posts", postId, "comments"],
@@ -54,6 +65,20 @@ export function CommentSection({ postId }: CommentSectionProps) {
     }
   };
 
+  const handleStickerSelect = (tag: string) => {
+    setNewComment((prev) => prev + tag);
+  };
+
+  const handleCommentReaction = (commentId: number, emoji: string) => {
+    setCommentReactions((prev) => ({
+      ...prev,
+      [commentId]: {
+        ...prev[commentId],
+        [emoji]: (prev[commentId]?.[emoji] || 0) + 1,
+      },
+    }));
+  };
+
   return (
     <div data-testid="comment-section">
       <h3 className="text-base font-bold mb-4 flex items-center gap-2">
@@ -71,15 +96,21 @@ export function CommentSection({ postId }: CommentSectionProps) {
           </div>
         )}
         <div className="flex gap-2">
-          <textarea
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder="講啲嘢啦..."
-            maxLength={500}
-            rows={2}
-            className="flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50"
-            data-testid="comment-input"
-          />
+          <div className="flex-1 flex flex-col gap-1">
+            <textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="講啲嘢啦..."
+              maxLength={500}
+              rows={2}
+              className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50"
+              data-testid="comment-input"
+            />
+            <div className="flex items-center justify-between">
+              <StickerPicker onSelect={handleStickerSelect} />
+              <span className="text-[10px] text-muted-foreground font-mono">{newComment.length}/500</span>
+            </div>
+          </div>
           <button
             type="submit"
             disabled={!newComment.trim() || addComment.isPending}
@@ -123,16 +154,32 @@ export function CommentSection({ postId }: CommentSectionProps) {
                     {timeAgo(comment.createdAt)}
                   </span>
                 </div>
-                <p className="text-sm text-foreground/90 leading-relaxed mb-2">
-                  {comment.content}
-                </p>
-                <button
-                  className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
-                  data-testid={`comment-like-${comment.id}`}
-                >
-                  <ThumbsUp className="w-3 h-3" />
-                  <span className="text-[10px] font-mono">{comment.likes}</span>
-                </button>
+                <div className="text-sm text-foreground/90 leading-relaxed mb-2">
+                  {renderStickers(comment.content)}
+                </div>
+                {/* Comment sticker reactions */}
+                <div className="flex items-center gap-1 flex-wrap">
+                  {COMMENT_REACTIONS.map((r) => {
+                    const count = commentReactions[comment.id]?.[r.emoji] || 0;
+                    return (
+                      <button
+                        key={r.emoji}
+                        type="button"
+                        onClick={() => handleCommentReaction(comment.id, r.emoji)}
+                        className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] border transition-colors ${
+                          count > 0
+                            ? "border-primary/30 bg-primary/10 text-primary"
+                            : "border-border/50 text-muted-foreground hover:border-primary/30 hover:text-primary"
+                        }`}
+                        data-testid={`comment-reaction-${comment.id}-${r.label}`}
+                      >
+                        <span>{r.emoji}</span>
+                        <span className="font-mono">{r.label}</span>
+                        {count > 0 && <span className="font-mono font-bold ml-0.5">{count}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
               </motion.div>
             ))}
           </div>

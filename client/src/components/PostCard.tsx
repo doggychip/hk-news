@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
-import { MessageSquare, Flame, ExternalLink } from "lucide-react";
-import type { Post } from "@shared/schema";
+import { MessageSquare, Flame } from "lucide-react";
+import type { Post, Reactions } from "@shared/schema";
 import { ReactionBar } from "./ReactionBar";
 import { Link } from "wouter";
 
@@ -35,6 +35,38 @@ function timeAgo(dateStr: string): string {
   return `${diffDays}日前`;
 }
 
+/** Compute meme flair based on reaction ratios */
+function getMemeFlair(reactions: Reactions): { emoji: string; label: string; color: string } | null {
+  const total = reactions.fire + reactions.cringe + reactions.rofl + reactions.dead + reactions.chill + reactions.rage;
+  if (total < 20) return null;
+
+  const ratios = {
+    fire: reactions.fire / total,
+    cringe: reactions.cringe / total,
+    rofl: reactions.rofl / total,
+    dead: reactions.dead / total,
+    chill: reactions.chill / total,
+    rage: reactions.rage / total,
+  };
+
+  if (ratios.rofl > 0.4) return { emoji: "😂", label: "SLDPK", color: "text-pink-500" };
+  if (ratios.dead > 0.4) return { emoji: "⚰️", label: "RIP", color: "text-purple-400" };
+  if (ratios.cringe > 0.35) return { emoji: "💩", label: "低質", color: "text-yellow-400" };
+  if (ratios.fire > 0.4) return { emoji: "🔥", label: "爆Post", color: "text-orange-500" };
+  if (ratios.chill > 0.4) return { emoji: "🐶", label: "Chill", color: "text-cyan-400" };
+  if (ratios.rage > 0.3) return { emoji: "🤬", label: "屌", color: "text-red-500" };
+  if (total > 200) return { emoji: "👀", label: "食花生", color: "text-amber-400" };
+  if (ratios.fire > 0.25 && total > 100) return { emoji: "🧠", label: "高質", color: "text-emerald-400" };
+  return null;
+}
+
+/** Check if post is a "shitpost" (high rofl+dead) */
+function isShitpost(reactions: Reactions): boolean {
+  const total = reactions.fire + reactions.cringe + reactions.rofl + reactions.dead + reactions.chill + reactions.rage;
+  if (total < 30) return false;
+  return (reactions.rofl + reactions.dead) / total > 0.5;
+}
+
 interface PostCardProps {
   post: Post;
   index: number;
@@ -42,6 +74,15 @@ interface PostCardProps {
 
 export function PostCard({ post, index }: PostCardProps) {
   const badgeClass = CATEGORY_BADGE[post.category] || "border-muted-foreground/30 text-muted-foreground bg-muted";
+  const flair = getMemeFlair(post.reactions);
+  const shitpost = isShitpost(post.reactions);
+  const isHot = post.heat > 90;
+
+  const cardClasses = [
+    "post-card block bg-card border border-card-border rounded-lg p-4 cursor-pointer",
+    shitpost ? "chaos-border" : "",
+    isHot ? "fire-aura" : "",
+  ].filter(Boolean).join(" ");
 
   return (
     <motion.div
@@ -50,15 +91,18 @@ export function PostCard({ post, index }: PostCardProps) {
       transition={{ duration: 0.3, delay: index * 0.05 }}
     >
       <Link href={`/post/${post.id}`}>
-        <div
-          className="post-card block bg-card border border-card-border rounded-lg p-4 cursor-pointer"
-          data-testid={`post-card-${post.id}`}
-        >
-          {/* Top row: category + source + time */}
+        <div className={cardClasses} data-testid={`post-card-${post.id}`}>
+          {/* Top row: category + flair + source + time */}
           <div className="flex items-center gap-2 mb-2">
             <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border font-mono ${badgeClass}`}>
               {post.category}
             </span>
+            {flair && (
+              <span className={`meme-flair inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold ${flair.color} bg-current/10`} data-testid="meme-flair">
+                <span>{flair.emoji}</span>
+                <span>{flair.label}</span>
+              </span>
+            )}
             <span className="text-[10px] text-muted-foreground font-mono">
               {post.source} · {timeAgo(post.createdAt)}
             </span>

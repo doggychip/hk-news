@@ -70,7 +70,7 @@ export class MemStorage implements IStorage {
         heat: 87,
         commentCount: 234,
         createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-        reactions: { fire: 89, shocked: 12, laughing: 45, skull: 23, heart: 67 },
+        reactions: { fire: 89, cringe: 12, rofl: 45, dead: 23, chill: 67, rage: 8 },
       },
       {
         title: "返工遇到咁嘅同事你點頂？",
@@ -82,7 +82,7 @@ export class MemStorage implements IStorage {
         heat: 95,
         commentCount: 567,
         createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-        reactions: { fire: 234, shocked: 45, laughing: 12, skull: 189, heart: 23 },
+        reactions: { fire: 234, cringe: 45, rofl: 12, dead: 189, chill: 23, rage: 15 },
       },
       {
         title: "深水埗掃街路線推介 必食清單",
@@ -94,7 +94,7 @@ export class MemStorage implements IStorage {
         heat: 78,
         commentCount: 189,
         createdAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-        reactions: { fire: 156, shocked: 8, laughing: 23, skull: 5, heart: 234 },
+        reactions: { fire: 156, cringe: 8, rofl: 23, dead: 5, chill: 234, rage: 3 },
       },
       {
         title: "女朋友嫌我揸唔起車 應唔應該借錢買？",
@@ -106,7 +106,7 @@ export class MemStorage implements IStorage {
         heat: 92,
         commentCount: 891,
         createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-        reactions: { fire: 67, shocked: 234, laughing: 89, skull: 456, heart: 12 },
+        reactions: { fire: 67, cringe: 234, rofl: 89, dead: 456, chill: 12, rage: 78 },
       },
       {
         title: "ChatGPT出咗新model又貴咗 仲值唔值得俾錢？",
@@ -118,7 +118,7 @@ export class MemStorage implements IStorage {
         heat: 71,
         commentCount: 156,
         createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-        reactions: { fire: 45, shocked: 23, laughing: 34, skull: 12, heart: 56 },
+        reactions: { fire: 45, cringe: 23, rofl: 34, dead: 12, chill: 56, rage: 9 },
       },
       {
         title: "有冇人覺得而家啲樓價癲到冇得頂？",
@@ -130,7 +130,7 @@ export class MemStorage implements IStorage {
         heat: 88,
         commentCount: 432,
         createdAt: new Date(Date.now() - 1000 * 60 * 150).toISOString(),
-        reactions: { fire: 178, shocked: 89, laughing: 23, skull: 345, heart: 34 },
+        reactions: { fire: 178, cringe: 89, rofl: 23, dead: 345, chill: 34, rage: 56 },
       },
       {
         title: "MIRROR成員Solo歌邊首最正？",
@@ -142,7 +142,7 @@ export class MemStorage implements IStorage {
         heat: 83,
         commentCount: 678,
         createdAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-        reactions: { fire: 234, shocked: 12, laughing: 56, skull: 23, heart: 567 },
+        reactions: { fire: 234, cringe: 12, rofl: 56, dead: 23, chill: 567, rage: 18 },
       },
       {
         title: "公司IT部門啲人係咪全部都社恐？",
@@ -154,7 +154,7 @@ export class MemStorage implements IStorage {
         heat: 76,
         commentCount: 345,
         createdAt: new Date(Date.now() - 1000 * 60 * 200).toISOString(),
-        reactions: { fire: 56, shocked: 34, laughing: 567, skull: 89, heart: 23 },
+        reactions: { fire: 56, cringe: 34, rofl: 567, dead: 89, chill: 23, rage: 42 },
       },
       {
         title: "今日西九龍出咗咩事？成條路塞晒",
@@ -166,7 +166,7 @@ export class MemStorage implements IStorage {
         heat: 94,
         commentCount: 234,
         createdAt: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
-        reactions: { fire: 123, shocked: 345, laughing: 5, skull: 12, heart: 8 },
+        reactions: { fire: 123, cringe: 345, rofl: 5, dead: 12, chill: 8, rage: 67 },
       },
       {
         title: "分享下最近煲緊咩劇",
@@ -178,7 +178,7 @@ export class MemStorage implements IStorage {
         heat: 65,
         commentCount: 289,
         createdAt: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
-        reactions: { fire: 34, shocked: 12, laughing: 45, skull: 8, heart: 189 },
+        reactions: { fire: 34, cringe: 12, rofl: 45, dead: 8, chill: 189, rage: 5 },
       },
       {
         title: "用咗iPhone 16 Pro一個月嘅真實感受",
@@ -190,7 +190,7 @@ export class MemStorage implements IStorage {
         heat: 68,
         commentCount: 198,
         createdAt: new Date(Date.now() - 1000 * 60 * 300).toISOString(),
-        reactions: { fire: 23, shocked: 8, laughing: 34, skull: 12, heart: 45 },
+        reactions: { fire: 23, cringe: 8, rofl: 34, dead: 12, chill: 45, rage: 6 },
       },
       {
         title: "終於同拍咗五年嘅女朋友求婚成功！",
@@ -202,7 +202,7 @@ export class MemStorage implements IStorage {
         heat: 91,
         commentCount: 1023,
         createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-        reactions: { fire: 89, shocked: 23, laughing: 12, skull: 5, heart: 1567 },
+        reactions: { fire: 89, cringe: 23, rofl: 12, dead: 5, chill: 1567, rage: 2 },
       },
       {
         title: "觀塘工廈cafe最新推薦 周末好去處",
@@ -214,7 +214,7 @@ export class MemStorage implements IStorage {
         heat: 72,
         commentCount: 145,
         createdAt: new Date(Date.now() - 1000 * 60 * 360).toISOString(),
-        reactions: { fire: 67, shocked: 5, laughing: 12, skull: 3, heart: 234 },
+        reactions: { fire: 67, cringe: 5, rofl: 12, dead: 3, chill: 234, rage: 1 },
       },
       {
         title: "第一次做freelance接到單大project好緊張",
@@ -226,7 +226,7 @@ export class MemStorage implements IStorage {
         heat: 69,
         commentCount: 201,
         createdAt: new Date(Date.now() - 1000 * 60 * 420).toISOString(),
-        reactions: { fire: 123, shocked: 12, laughing: 8, skull: 5, heart: 89 },
+        reactions: { fire: 123, cringe: 12, rofl: 8, dead: 5, chill: 89, rage: 4 },
       },
       {
         title: "頂唔順啲家長group 成日要人回覆收到",
@@ -238,7 +238,7 @@ export class MemStorage implements IStorage {
         heat: 85,
         commentCount: 456,
         createdAt: new Date(Date.now() - 1000 * 60 * 75).toISOString(),
-        reactions: { fire: 78, shocked: 56, laughing: 345, skull: 234, heart: 12 },
+        reactions: { fire: 78, cringe: 56, rofl: 345, dead: 234, chill: 12, rage: 33 },
       },
       {
         title: "港鐵又壞！觀塘線延誤半個鐘",
@@ -250,7 +250,7 @@ export class MemStorage implements IStorage {
         heat: 90,
         commentCount: 567,
         createdAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
-        reactions: { fire: 345, shocked: 123, laughing: 56, skull: 89, heart: 5 },
+        reactions: { fire: 345, cringe: 123, rofl: 56, dead: 89, chill: 5, rage: 99 },
       },
       {
         title: "想學廣東話嘅外國朋友推薦睇咩？",
@@ -262,7 +262,7 @@ export class MemStorage implements IStorage {
         heat: 74,
         commentCount: 178,
         createdAt: new Date(Date.now() - 1000 * 60 * 500).toISOString(),
-        reactions: { fire: 45, shocked: 8, laughing: 67, skull: 5, heart: 123 },
+        reactions: { fire: 45, cringe: 8, rofl: 67, dead: 5, chill: 123, rage: 7 },
       },
       {
         title: "荃灣新開嘅日式燒肉放題 $298食到飽",
@@ -274,7 +274,7 @@ export class MemStorage implements IStorage {
         heat: 73,
         commentCount: 167,
         createdAt: new Date(Date.now() - 1000 * 60 * 270).toISOString(),
-        reactions: { fire: 89, shocked: 5, laughing: 12, skull: 3, heart: 156 },
+        reactions: { fire: 89, cringe: 5, rofl: 12, dead: 3, chill: 156, rage: 2 },
       },
       {
         title: "有冇人試過用AI幫自己寫情書？",
@@ -286,7 +286,7 @@ export class MemStorage implements IStorage {
         heat: 79,
         commentCount: 234,
         createdAt: new Date(Date.now() - 1000 * 60 * 330).toISOString(),
-        reactions: { fire: 34, shocked: 12, laughing: 456, skull: 89, heart: 56 },
+        reactions: { fire: 34, cringe: 12, rofl: 456, dead: 89, chill: 56, rage: 22 },
       },
       {
         title: "Steam夏季特賣又嚟啦 有咩必買？",
@@ -298,7 +298,7 @@ export class MemStorage implements IStorage {
         heat: 82,
         commentCount: 312,
         createdAt: new Date(Date.now() - 1000 * 60 * 100).toISOString(),
-        reactions: { fire: 234, shocked: 12, laughing: 34, skull: 8, heart: 89 },
+        reactions: { fire: 234, cringe: 12, rofl: 34, dead: 8, chill: 89, rage: 11 },
       },
       {
         title: "究竟做銀行好定做startup好？",
@@ -310,7 +310,7 @@ export class MemStorage implements IStorage {
         heat: 80,
         commentCount: 389,
         createdAt: new Date(Date.now() - 1000 * 60 * 380).toISOString(),
-        reactions: { fire: 67, shocked: 23, laughing: 12, skull: 34, heart: 45 },
+        reactions: { fire: 67, cringe: 23, rofl: 12, dead: 34, chill: 45, rage: 8 },
       },
       {
         title: "分手後發現前度已經拍緊新嘢",
@@ -322,7 +322,7 @@ export class MemStorage implements IStorage {
         heat: 86,
         commentCount: 567,
         createdAt: new Date(Date.now() - 1000 * 60 * 55).toISOString(),
-        reactions: { fire: 23, shocked: 89, laughing: 12, skull: 156, heart: 234 },
+        reactions: { fire: 23, cringe: 89, rofl: 12, dead: 156, chill: 234, rage: 44 },
       },
       {
         title: "大埔行山路線推介 新手都啱",
@@ -334,7 +334,7 @@ export class MemStorage implements IStorage {
         heat: 62,
         commentCount: 123,
         createdAt: new Date(Date.now() - 1000 * 60 * 480).toISOString(),
-        reactions: { fire: 56, shocked: 3, laughing: 8, skull: 2, heart: 178 },
+        reactions: { fire: 56, cringe: 3, rofl: 8, dead: 2, chill: 178, rage: 1 },
       },
       {
         title: "最近啲外賣平台越嚟越貴 仲有人叫？",
@@ -346,7 +346,7 @@ export class MemStorage implements IStorage {
         heat: 77,
         commentCount: 289,
         createdAt: new Date(Date.now() - 1000 * 60 * 160).toISOString(),
-        reactions: { fire: 123, shocked: 45, laughing: 67, skull: 89, heart: 12 },
+        reactions: { fire: 123, cringe: 45, rofl: 67, dead: 89, chill: 12, rage: 31 },
       },
     ];
 
@@ -560,7 +560,7 @@ export class MemStorage implements IStorage {
       heat: 50,
       commentCount: 0,
       createdAt: new Date().toISOString(),
-      reactions: { fire: 0, shocked: 0, laughing: 0, skull: 0, heart: 0 },
+      reactions: { fire: 0, cringe: 0, rofl: 0, dead: 0, chill: 0, rage: 0 },
       userId: post.userId,
     };
     this.posts.set(id, newPost);

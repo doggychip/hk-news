@@ -41,10 +41,11 @@ function generateHeat(pubDate?: string): number {
 function generateReactions(): Reactions {
   return {
     fire: Math.floor(Math.random() * 200),
-    shocked: Math.floor(Math.random() * 100),
-    laughing: Math.floor(Math.random() * 80),
-    skull: Math.floor(Math.random() * 60),
-    heart: Math.floor(Math.random() * 150),
+    cringe: Math.floor(Math.random() * 100),
+    rofl: Math.floor(Math.random() * 80),
+    dead: Math.floor(Math.random() * 60),
+    chill: Math.floor(Math.random() * 150),
+    rage: Math.floor(Math.random() * 50),
   };
 }
 

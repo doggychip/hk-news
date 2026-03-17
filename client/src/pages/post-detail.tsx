@@ -52,10 +52,22 @@ export default function PostDetail() {
     enabled: postId > 0,
   });
 
+  const funnyLoading = [
+    "巴打等等，Post緊嚟緊...",
+    "Loading中，唔好走住...",
+    "搵緊嗰個Post，等陣...",
+    "幫緊你幫緊你...",
+    "膠嘢需要時間沉澱...",
+  ];
+  const loadingMsg = funnyLoading[Math.floor(Math.random() * funnyLoading.length)];
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-2xl mx-auto px-4 py-6">
+          <p className="text-center text-muted-foreground text-xs font-mono py-2 animate-pulse mb-4">
+            {loadingMsg}
+          </p>
           <div className="skeleton-shimmer h-8 w-20 rounded mb-6" />
           <div className="skeleton-shimmer h-6 w-3/4 rounded mb-3" />
           <div className="skeleton-shimmer h-4 w-1/2 rounded mb-6" />

@@ -280,3 +280,107 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Glitch text effect for logo */
+@keyframes glitch-flicker {
+  0%, 90%, 100% { opacity: 1; text-shadow: 0 0 10px hsl(var(--neon-pink) / 0.5); }
+  92% { opacity: 0.8; text-shadow: -2px 0 hsl(192 100% 50%), 2px 0 hsl(349 100% 57% / 0.8); }
+  94% { opacity: 1; text-shadow: 0 0 10px hsl(var(--neon-pink) / 0.5); }
+  96% { opacity: 0.7; text-shadow: 2px 0 hsl(192 100% 50%), -2px 0 hsl(349 100% 57% / 0.8); }
+  98% { opacity: 1; text-shadow: 0 0 10px hsl(var(--neon-pink) / 0.5); }
+}
+.glitch-text {
+  animation: glitch-flicker 10s ease-in-out infinite;
+}
+.glitch-text:hover {
+  animation: glitch-flicker 0.3s ease-in-out infinite;
+}
+
+/* Chaos rainbow border for shitpost cards */
+@keyframes chaos-gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.chaos-border {
+  position: relative;
+}
+.chaos-border::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff2d55, #00d4ff, #ffb800, #ff2d55);
+  background-size: 300% 100%;
+  animation: chaos-gradient 3s linear infinite;
+  z-index: -1;
+}
+
+/* Pulsing fire aura for hot posts */
+@keyframes fire-aura {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 45, 85, 0.3), 0 0 16px rgba(255, 45, 85, 0.1); }
+  50% { box-shadow: 0 0 16px rgba(255, 45, 85, 0.5), 0 0 32px rgba(255, 45, 85, 0.2); }
+}
+.fire-aura {
+  animation: fire-aura 2s ease-in-out infinite;
+}
+
+/* Reaction shake animation */
+@keyframes reaction-shake {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-8deg); }
+  40% { transform: rotate(8deg); }
+  60% { transform: rotate(-4deg); }
+  80% { transform: rotate(4deg); }
+}
+.reaction-shake {
+  animation: reaction-shake 0.4s ease-out;
+}
+
+/* Floating easter egg message */
+@keyframes float-up-fade {
+  0% { opacity: 0; transform: translateY(20px); }
+  15% { opacity: 0.9; transform: translateY(0px); }
+  85% { opacity: 0.9; transform: translateY(-10px); }
+  100% { opacity: 0; transform: translateY(-30px); }
+}
+.float-up-fade {
+  animation: float-up-fade 2s ease-out forwards;
+}
+
+/* Meme flair glow */
+.meme-flair {
+  text-shadow: 0 0 6px currentColor;
+}
+
+/* Sticker inline styles */
+.sticker-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 12px;
+}
+.sticker-rainbow {
+  background: linear-gradient(90deg, #ff2d55, #ffb800, #00d4ff, #ff2d55);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 2s linear infinite;
+  font-weight: 900;
+}
+.sticker-neon-pink { color: #ff2d55; text-shadow: 0 0 8px rgba(255, 45, 85, 0.6); font-weight: 800; }
+.sticker-quote { font-style: italic; color: hsl(var(--muted-foreground)); border-left: 2px solid hsl(192 100% 50%); padding-left: 6px; }
+
+/* Popcorn bounce for 食花生 sticker */
+@keyframes popcorn-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.popcorn-anim { display: inline-block; animation: popcorn-bounce 0.6s ease-in-out infinite; }
+
+/* Ticker speed variant */
+.ticker-fast {
+  animation: ticker-scroll 18s linear infinite !important;
+}
