@@ -1,6 +1,8 @@
 import RSSParser from "rss-parser";
 import type { Post, Category, Reactions } from "@shared/schema";
 import { generateSummary } from "./summarizer";
+import { analyzeSentiment } from "./sentiment";
+import { calculateTrendScore, calculateTrendDirection } from "./trending";
 
 const parser = new RSSParser({
   timeout: 10000,
@@ -88,6 +90,10 @@ export async function fetchFeeds(): Promise<Omit<Post, "id">[]> {
         const summary = generateSummary(title, content);
         const pubDate = item.pubDate || item.isoDate;
 
+        const heat = generateHeat(pubDate);
+        const reactions = generateReactions();
+        const sentiment = analyzeSentiment(title, content || title, heat, reactions);
+
         results.push({
           title,
           content: content || title,
@@ -96,10 +102,13 @@ export async function fetchFeeds(): Promise<Omit<Post, "id">[]> {
           source: source.name,
           sourceUrl: item.link || source.url,
           imageUrl: extractImageUrl(item),
-          heat: generateHeat(pubDate),
+          heat,
           commentCount: Math.floor(Math.random() * 300),
           createdAt: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
-          reactions: generateReactions(),
+          reactions,
+          sentiment,
+          trendDirection: "steady" as const,
+          trendScore: 0,
         });
       }
     } catch (error) {

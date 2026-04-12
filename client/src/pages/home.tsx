@@ -14,6 +14,7 @@ import { CreatePostModal } from "@/components/CreatePostModal";
 import { AuthModal } from "@/components/AuthModal";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
 import { MemeOfTheDay } from "@/components/MemeOfTheDay";
+import { DailyBriefingCard } from "@/components/DailyBriefing";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -117,6 +118,9 @@ export default function HomePage() {
 
       {/* Hot Ticker */}
       <HotTicker />
+
+      {/* AI Daily Briefing */}
+      <DailyBriefingCard />
 
       {/* Meme of the Day */}
       <MemeOfTheDay />

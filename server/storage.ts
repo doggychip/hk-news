@@ -1,5 +1,7 @@
 import type { Post, Comment, Category, Reactions, ReactionType, User, Session } from "@shared/schema";
 import { generateSummary } from "./summarizer";
+import { analyzeSentiment } from "./sentiment";
+import { recordSnapshot, calculateTrendScore, calculateTrendDirection } from "./trending";
 import crypto from "crypto";
 
 export interface IStorage {
@@ -59,7 +61,7 @@ export class MemStorage implements IStorage {
   }
 
   private seedMockData() {
-    const mockPosts: Omit<Post, "id">[] = [
+    const mockPosts: Omit<Post, "id" | "sentiment" | "trendDirection" | "trendScore">[] = [
       {
         title: "點解而家啲後生仔咁鍾意飲手沖？",
         content: "最近發現身邊好多朋友都開始自己買手沖壺，仲成日post啲咖啡相上IG。以前唔係淨係飲奶茶咩？而家個個都變咗咖啡師咁。有冇人同我一樣覺得手沖其實好廢？定係真係好好飲？我試過一次，味道同出面買嘅都差唔多喎。不過可能係我個技術問題。有冇巴打可以教下？",
@@ -350,11 +352,16 @@ export class MemStorage implements IStorage {
       },
     ];
 
-    // Assign and store posts with generated summaries
+    // Assign and store posts with generated summaries + sentiment + trending
     for (const post of mockPosts) {
       const id = this.nextPostId++;
       const summary = generateSummary(post.title, post.content);
-      this.posts.set(id, { ...post, id, summary });
+      const sentiment = analyzeSentiment(post.title, post.content, post.heat, post.reactions);
+      const fullPost: Post = { ...post, id, summary, sentiment, trendDirection: "steady", trendScore: 0 };
+      recordSnapshot(fullPost);
+      fullPost.trendScore = calculateTrendScore(fullPost);
+      fullPost.trendDirection = calculateTrendDirection(fullPost);
+      this.posts.set(id, fullPost);
     }
 
     // Add some mock comments
@@ -421,6 +428,9 @@ export class MemStorage implements IStorage {
 
       const id = this.nextPostId++;
       const newPost: Post = { ...post, id };
+      recordSnapshot(newPost);
+      newPost.trendScore = calculateTrendScore(newPost);
+      newPost.trendDirection = calculateTrendDirection(newPost);
       this.posts.set(id, newPost);
       added.push(newPost);
     }
@@ -433,6 +443,12 @@ export class MemStorage implements IStorage {
     post.reactions[type]++;
     // Slightly increase heat
     post.heat = Math.min(100, post.heat + 0.5);
+    // Update trending data
+    recordSnapshot(post);
+    post.trendScore = calculateTrendScore(post);
+    post.trendDirection = calculateTrendDirection(post);
+    // Re-evaluate sentiment with new reactions
+    post.sentiment = analyzeSentiment(post.title, post.content, post.heat, post.reactions);
     this.posts.set(postId, post);
     return post;
   }
@@ -549,6 +565,7 @@ export class MemStorage implements IStorage {
 
   async createPost(post: { title: string; content: string; category: string; userId: number }): Promise<Post> {
     const id = this.nextPostId++;
+    const reactions = { fire: 0, cringe: 0, rofl: 0, dead: 0, chill: 0, rage: 0 };
     const newPost: Post = {
       id,
       title: post.title,
@@ -560,8 +577,11 @@ export class MemStorage implements IStorage {
       heat: 50,
       commentCount: 0,
       createdAt: new Date().toISOString(),
-      reactions: { fire: 0, cringe: 0, rofl: 0, dead: 0, chill: 0, rage: 0 },
+      reactions,
       userId: post.userId,
+      sentiment: analyzeSentiment(post.title, post.content, 50, reactions),
+      trendDirection: "up",
+      trendScore: 0,
     };
     this.posts.set(id, newPost);
     // Increment user stats

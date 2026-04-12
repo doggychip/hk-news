@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { fetchFeeds } from "./feeds";
 import { insertCommentSchema, reactSchema, insertUserSchema, loginSchema, insertPostSchema } from "@shared/schema";
 import type { User } from "@shared/schema";
+import { generateBriefing, invalidateBriefingCache } from "./briefing";
 
 async function getAuthUser(req: any): Promise<User | null> {
   const auth = req.headers.authorization;
@@ -101,9 +102,25 @@ export async function registerRoutes(server: Server, app: Express) {
     res.json(trending);
   });
 
+  // GET /api/briefing - daily AI briefing
+  app.get("/api/briefing", async (_req, res) => {
+    await ensureFreshData();
+    const posts = await storage.getPosts();
+    const briefing = generateBriefing(posts);
+    res.json(briefing);
+  });
+
+  // GET /api/trending/velocity - posts sorted by trend velocity
+  app.get("/api/trending/velocity", async (_req, res) => {
+    const posts = await storage.getPosts();
+    const sorted = [...posts].sort((a, b) => b.trendScore - a.trendScore).slice(0, 10);
+    res.json(sorted);
+  });
+
   // POST /api/refresh - re-fetch RSS feeds
   app.post("/api/refresh", async (_req, res) => {
     lastFetchTime = 0;
+    invalidateBriefingCache();
     await ensureFreshData();
     const posts = await storage.getPosts();
     res.json({ count: posts.length, message: "已更新" });

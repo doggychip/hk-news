@@ -2,6 +2,8 @@ import { motion } from "framer-motion";
 import { MessageSquare, Flame } from "lucide-react";
 import type { Post, Reactions } from "@shared/schema";
 import { ReactionBar } from "./ReactionBar";
+import { SentimentBadge } from "./SentimentBadge";
+import { TrendIndicator } from "./TrendIndicator";
 import { Link } from "wouter";
 
 const CATEGORY_BADGE: Record<string, string> = {
@@ -97,6 +99,7 @@ export function PostCard({ post, index }: PostCardProps) {
             <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border font-mono ${badgeClass}`}>
               {post.category}
             </span>
+            {post.sentiment && <SentimentBadge sentiment={post.sentiment} />}
             {flair && (
               <span className={`meme-flair inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold ${flair.color} bg-current/10`} data-testid="meme-flair">
                 <span>{flair.emoji}</span>
@@ -107,6 +110,7 @@ export function PostCard({ post, index }: PostCardProps) {
               {post.source} · {timeAgo(post.createdAt)}
             </span>
             <div className="ml-auto flex items-center gap-1.5">
+              {post.trendDirection && <TrendIndicator direction={post.trendDirection} score={post.trendScore} />}
               <Flame className={`w-3 h-3 ${getHeatColor(post.heat)}`} />
               <span className={`text-[11px] font-bold font-mono ${getHeatColor(post.heat)}`}>
                 {post.heat}

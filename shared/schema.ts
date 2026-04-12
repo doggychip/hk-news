@@ -16,6 +16,14 @@ export interface Reactions {
 
 export type ReactionType = keyof Reactions;
 
+// Sentiment types
+export const SENTIMENT_TYPES = ["positive", "negative", "neutral", "explosive"] as const;
+export type Sentiment = typeof SENTIMENT_TYPES[number];
+
+// Trend direction
+export const TREND_DIRECTIONS = ["up", "down", "steady"] as const;
+export type TrendDirection = typeof TREND_DIRECTIONS[number];
+
 // Post
 export interface Post {
   id: number;
@@ -31,6 +39,26 @@ export interface Post {
   createdAt: string;
   reactions: Reactions;
   userId?: number;
+  sentiment: Sentiment;
+  trendDirection: TrendDirection;
+  trendScore: number;
+}
+
+// Daily Briefing
+export interface BriefingCategory {
+  category: string;
+  topStories: Array<{ title: string; summary: string; sentiment: Sentiment; heat: number }>;
+  categoryMood: string;
+}
+
+export interface DailyBriefing {
+  date: string;
+  greeting: string;
+  overallMood: string;
+  sentimentBreakdown: { positive: number; negative: number; neutral: number; explosive: number };
+  categories: BriefingCategory[];
+  hotTake: string;
+  generatedAt: string;
 }
 
 // Comment
