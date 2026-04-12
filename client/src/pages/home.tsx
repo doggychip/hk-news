@@ -51,6 +51,7 @@ export default function HomePage() {
   const [showScroll, setShowScroll] = useState(false);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(20);
   const [easterEgg, setEasterEgg] = useState<string | null>(null);
   const easterEggTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollCount = useRef(0);
@@ -134,7 +135,7 @@ export default function HomePage() {
       <MemeOfTheDay />
 
       {/* Category Tabs */}
-      <div className="sticky top-[57px] z-40 bg-background/90 backdrop-blur-md border-b border-border">
+      <div className="sticky top-[53px] z-40 bg-background/95 backdrop-blur-md border-b border-border transition-shadow" style={{ WebkitBackfaceVisibility: "hidden" }}>
         <div className="max-w-2xl mx-auto px-3">
           <CategoryTabs selected={category} onSelect={setCategory} />
         </div>
@@ -157,15 +158,33 @@ export default function HomePage() {
             <p className="text-muted-foreground/60 text-xs mt-1">試下換個分類或者搜尋字</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {posts.map((post, i) => (
-              <PostCard key={post.id} post={post} index={i} />
-            ))}
-          </div>
+          <>
+            <div className="space-y-3">
+              {posts.slice(0, visibleCount).map((post, i) => (
+                <PostCard key={post.id} post={post} index={i} />
+              ))}
+            </div>
+
+            {/* Load more / end indicator */}
+            {posts.length > visibleCount ? (
+              <div className="py-6 text-center">
+                <button
+                  onClick={() => setVisibleCount((c) => c + 20)}
+                  className="px-6 py-2 bg-muted hover:bg-muted/80 text-foreground text-xs font-bold rounded-full border border-border transition-colors"
+                >
+                  載入更多 ({posts.length - visibleCount} 篇)
+                </button>
+              </div>
+            ) : (
+              <div className="py-8 text-center">
+                <p className="text-muted-foreground/50 text-xs font-mono">— 到底啦 巴打 —</p>
+              </div>
+            )}
+          </>
         )}
 
         {/* Attribution */}
-        <div className="mt-8 pb-4">
+        <div className="pb-4">
           <PerplexityAttribution />
         </div>
       </main>

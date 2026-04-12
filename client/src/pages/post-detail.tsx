@@ -1,15 +1,14 @@
+import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
-import { ArrowLeft, Flame, MessageSquare, ExternalLink } from "lucide-react";
-import { motion } from "framer-motion";
+import { ArrowLeft, Flame, MessageSquare, ExternalLink, ChevronUp, Bot } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import type { Post } from "@shared/schema";
 import { ReactionBar } from "@/components/ReactionBar";
 import { CommentSection } from "@/components/CommentSection";
 import { AIDebatePanel } from "@/components/AIDebatePanel";
 import { SentimentBadge } from "@/components/SentimentBadge";
-import { PerplexityAttribution } from "@/components/PerplexityAttribution";
 import { apiRequest } from "@/lib/queryClient";
-import { Bot } from "lucide-react";
 
 const CATEGORY_BADGE: Record<string, string> = {
   "熱門": "border-orange-500/50 text-orange-500 bg-orange-500/10",
@@ -45,6 +44,7 @@ function timeAgo(dateStr: string): string {
 export default function PostDetail() {
   const { id } = useParams<{ id: string }>();
   const postId = parseInt(id || "0");
+  const [showScroll, setShowScroll] = useState(false);
 
   const { data: post, isLoading, error } = useQuery<Post>({
     queryKey: ["/api/posts", postId],
@@ -55,27 +55,33 @@ export default function PostDetail() {
     enabled: postId > 0,
   });
 
-  const funnyLoading = [
-    "巴打等等，Post緊嚟緊...",
-    "Loading中，唔好走住...",
-    "搵緊嗰個Post，等陣...",
-    "幫緊你幫緊你...",
-    "膠嘢需要時間沉澱...",
-  ];
-  const loadingMsg = funnyLoading[Math.floor(Math.random() * funnyLoading.length)];
+  // Track scroll for back-to-top button
+  useState(() => {
+    const handleScroll = () => setShowScroll(window.scrollY > 300);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  });
+
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="bg-background">
         <div className="max-w-2xl mx-auto px-4 py-6">
-          <p className="text-center text-muted-foreground text-xs font-mono py-2 animate-pulse mb-4">
-            {loadingMsg}
-          </p>
-          <div className="skeleton-shimmer h-8 w-20 rounded mb-6" />
-          <div className="skeleton-shimmer h-6 w-3/4 rounded mb-3" />
-          <div className="skeleton-shimmer h-4 w-1/2 rounded mb-6" />
-          <div className="skeleton-shimmer h-24 rounded mb-4" />
-          <div className="skeleton-shimmer h-40 rounded" />
+          <div className="skeleton-shimmer h-4 w-16 rounded mb-4" />
+          <div className="skeleton-shimmer h-5 w-24 rounded mb-3" />
+          <div className="skeleton-shimmer h-8 w-full rounded mb-2" />
+          <div className="skeleton-shimmer h-8 w-3/4 rounded mb-4" />
+          <div className="skeleton-shimmer h-3 w-40 rounded mb-6" />
+          <div className="skeleton-shimmer h-28 rounded mb-4" />
+          <div className="skeleton-shimmer h-20 rounded mb-4" />
+          <div className="skeleton-shimmer h-48 rounded mb-4" />
+          <div className="skeleton-shimmer h-10 rounded mb-6" />
+          <div className="skeleton-shimmer h-6 w-24 rounded mb-3" />
+          <div className="skeleton-shimmer h-20 rounded mb-2" />
+          <div className="skeleton-shimmer h-20 rounded" />
         </div>
       </div>
     );
@@ -83,9 +89,9 @@ export default function PostDetail() {
 
   if (!post || error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="bg-background flex items-center justify-center" style={{ minHeight: "50vh" }}>
         <div className="text-center">
-          <p className="text-lg font-bold text-foreground mb-2">搵唔到呢個帖 😅</p>
+          <p className="text-lg font-bold text-foreground mb-2">搵唔到呢個帖</p>
           <Link href="/">
             <span className="text-primary text-sm hover:underline cursor-pointer">返回主頁</span>
           </Link>
@@ -97,20 +103,17 @@ export default function PostDetail() {
   const badgeClass = CATEGORY_BADGE[post.category] || "border-muted-foreground/30 text-muted-foreground bg-muted";
 
   return (
-    <div className="min-h-screen bg-background">
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className="max-w-2xl mx-auto px-4 py-4"
-      >
-        {/* Back button */}
-        <Link href="/">
-          <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors mb-4" data-testid="back-button">
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">返回</span>
-          </button>
-        </Link>
+    <div className="bg-background pb-8">
+      <div className="max-w-2xl mx-auto px-4 py-4">
+        {/* Sticky back button */}
+        <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-md -mx-4 px-4 py-2 mb-2 border-b border-border/50">
+          <Link href="/">
+            <button className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors" data-testid="back-button">
+              <ArrowLeft className="w-4 h-4" />
+              <span className="text-sm font-medium">返���</span>
+            </button>
+          </Link>
+        </div>
 
         {/* Post header */}
         <div className="mb-4">
@@ -141,7 +144,7 @@ export default function PostDetail() {
         </div>
 
         {/* Summary box */}
-        <div className="mb-6 p-4 rounded-lg border-2 border-primary/30 bg-primary/5 neon-glow-pink" data-testid="post-summary">
+        <div className="mb-4 p-4 rounded-lg border-2 border-primary/30 bg-primary/5" data-testid="post-summary">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-sm">📋</span>
             <span className="text-xs font-bold text-primary">30秒懶人包</span>
@@ -162,13 +165,13 @@ export default function PostDetail() {
 
         {/* AI Debate */}
         {post.aiDebate && (
-          <div className="mb-6">
+          <div className="mb-4">
             <AIDebatePanel debate={post.aiDebate} />
           </div>
         )}
 
         {/* Full content */}
-        <div className="mb-6" data-testid="post-content">
+        <div className="mb-4" data-testid="post-content">
           <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">
             {post.content}
           </p>
@@ -176,31 +179,43 @@ export default function PostDetail() {
 
         {/* Source link */}
         {post.sourceUrl && (
-          <a
-            href={post.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-primary hover:underline mb-6"
-            data-testid="source-link"
-          >
-            <ExternalLink className="w-3 h-3" />
-            查看原文
-          </a>
+          <div className="mb-4">
+            <a
+              href={post.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              data-testid="source-link"
+            >
+              <ExternalLink className="w-3 h-3" />
+              查看原文
+            </a>
+          </div>
         )}
 
         {/* Reaction bar (large) */}
-        <div className="mb-8 py-4 border-y border-border">
+        <div className="mb-6 py-3 border-y border-border">
           <ReactionBar postId={post.id} reactions={post.reactions} size="lg" />
         </div>
 
         {/* Comments */}
         <CommentSection postId={post.id} />
+      </div>
 
-        {/* Attribution */}
-        <div className="mt-8 pb-4">
-          <PerplexityAttribution />
-        </div>
-      </motion.div>
+      {/* Floating scroll-to-top */}
+      <AnimatePresence>
+        {showScroll && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            onClick={scrollToTop}
+            className="fixed bottom-6 right-6 z-50 w-10 h-10 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center shadow-lg hover:bg-secondary/90 transition-colors"
+          >
+            <ChevronUp className="w-5 h-5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

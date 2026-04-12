@@ -105,7 +105,7 @@ export async function fetchFeeds(): Promise<Omit<Post, "id">[]> {
           sourceUrl: item.link || source.url,
           imageUrl: extractImageUrl(item),
           heat,
-          commentCount: Math.floor(Math.random() * 300),
+          commentCount: 0,
           createdAt: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
           reactions,
           sentiment,

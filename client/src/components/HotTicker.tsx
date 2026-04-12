@@ -72,7 +72,7 @@ export function HotTicker() {
                 {item.type === "post" ? (
                   <>
                     <span className="text-xs font-mono text-orange-500/80">#{item.rank}</span>
-                    <span className="text-xs font-medium text-foreground/90 max-w-[200px] truncate">
+                    <span className="text-xs font-medium text-foreground/90 max-w-[280px] sm:max-w-[400px] truncate">
                       {item.post.title}
                     </span>
                     <span className="text-[10px] font-mono text-muted-foreground">🔥{item.post.heat}</span>

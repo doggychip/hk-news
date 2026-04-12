@@ -2,14 +2,14 @@ import { CATEGORIES } from "@shared/schema";
 import { useRef, useEffect } from "react";
 
 const CATEGORY_COLORS: Record<string, string> = {
-  "熱門": "border-orange-500 text-orange-500 dark:border-orange-400 dark:text-orange-400",
-  "吹水": "border-pink-500 text-pink-500 dark:border-pink-400 dark:text-pink-400",
-  "娛樂": "border-purple-500 text-purple-500 dark:border-purple-400 dark:text-purple-400",
-  "時事": "border-red-500 text-red-500 dark:border-red-400 dark:text-red-400",
-  "返工": "border-blue-500 text-blue-500 dark:border-blue-400 dark:text-blue-400",
-  "感情": "border-rose-500 text-rose-500 dark:border-rose-400 dark:text-rose-400",
-  "飲食": "border-amber-500 text-amber-500 dark:border-amber-400 dark:text-amber-400",
-  "科技": "border-cyan-500 text-cyan-500 dark:border-cyan-400 dark:text-cyan-400",
+  "熱門": "border-orange-600 text-orange-600 dark:border-orange-400 dark:text-orange-400",
+  "吹水": "border-pink-600 text-pink-600 dark:border-pink-400 dark:text-pink-400",
+  "娛樂": "border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400",
+  "時事": "border-red-600 text-red-600 dark:border-red-400 dark:text-red-400",
+  "返工": "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400",
+  "感情": "border-rose-600 text-rose-600 dark:border-rose-400 dark:text-rose-400",
+  "飲食": "border-amber-700 text-amber-700 dark:border-amber-400 dark:text-amber-400",
+  "科技": "border-cyan-600 text-cyan-600 dark:border-cyan-400 dark:text-cyan-400",
 };
 
 const ACTIVE_COLORS: Record<string, string> = {
