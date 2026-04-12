@@ -3,16 +3,18 @@ import type { Post } from "@shared/schema";
 import { Flame } from "lucide-react";
 
 const MEME_INJECTIONS = [
-  "67 67 67 67 67",
-  "SLDPK",
-  "感建分",
-  "來都來了",
-  "張中和",
-  "影到我plz del",
-  "我覺得我哋可以理性討論",
-  "食花生",
-  "膠都唔想黐",
-  "Chill la 師兄",
+  "RIP 巴打",
+  "SLDPK到震",
+  "呢個世界已經癲咗",
+  "港鐵：不便之處 敬請原諒",
+  "老細：呢個係團隊精神",
+  "業主：已減價 得$900萬",
+  "食花生食到飽",
+  "社會已死",
+  "膠到無朋友",
+  "又一日做牛做馬",
+  "躺平先係出路",
+  "全部都係垃圾",
 ];
 
 function getRandomMemes(count: number): string[] {
