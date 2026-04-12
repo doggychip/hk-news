@@ -78,6 +78,9 @@ export interface Comment {
   likes: number;
   userId?: number;
   displayName?: string;
+  isAI?: boolean;
+  aiPersona?: string;
+  aiAvatar?: string;
 }
 
 // User

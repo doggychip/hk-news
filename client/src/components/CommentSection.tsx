@@ -147,12 +147,24 @@ export function CommentSection({ postId }: CommentSectionProps) {
                 data-testid={`comment-${comment.id}`}
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-bold text-primary font-mono">
-                    {comment.displayName || comment.nickname}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground font-mono">
-                    {timeAgo(comment.createdAt)}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-primary font-mono">
+                      {comment.displayName || comment.nickname}
+                    </span>
+                    {comment.isAI && (
+                      <span className="inline-flex items-center gap-0.5 px-1 py-0 rounded text-[9px] font-bold bg-primary/10 text-primary border border-primary/20">
+                        🤖 AI
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {comment.likes > 0 && (
+                      <span className="text-[10px] text-muted-foreground font-mono">👍 {comment.likes}</span>
+                    )}
+                    <span className="text-[10px] text-muted-foreground font-mono">
+                      {timeAgo(comment.createdAt)}
+                    </span>
+                  </div>
                 </div>
                 <div className="text-sm text-foreground/90 leading-relaxed mb-2">
                   {renderStickers(comment.content)}

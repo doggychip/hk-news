@@ -3,6 +3,7 @@ import { generateSummary } from "./summarizer";
 import { analyzeSentiment } from "./sentiment";
 import { recordSnapshot, calculateTrendScore, calculateTrendDirection } from "./trending";
 import { generateHotTake, generateDebate, generateClickbait } from "./ai-content";
+import { generatePersonaComments } from "./ai-personas";
 import crypto from "crypto";
 
 export interface IStorage {
@@ -320,37 +321,24 @@ export class MemStorage implements IStorage {
       this.posts.set(id, fullPost);
     }
 
-    // Add some mock comments
-    const mockComments: { postId: number; content: string }[] = [
-      { postId: 1, content: "勞工處投訴啦巴打！呢啲已經違法！唔好再忍！" },
-      { postId: 1, content: "我上間公司都係咁，走咗先係最正確嘅決定" },
-      { postId: 1, content: "記得保留晒啲WhatsApp record做evidence先好走" },
-      { postId: 2, content: "巴打你仲唔跑？呢條女根本當你ATM！" },
-      { postId: 2, content: "嗰$8萬可以告佢架，副卡消費你有權追" },
-      { postId: 2, content: "RIP 巴打...呢個世界真係太黑暗" },
-      { postId: 4, content: "巴打頂住！37歲IT好多公司請㗎" },
-      { postId: 4, content: "先唔好慌，即刻apply遣散費同長期服務金" },
-      { postId: 6, content: "香港已經唔係人住嘅地方 移民啦大佬" },
-      { postId: 6, content: "呢個政府只係幫地產商，市民死活佢唔理" },
-      { postId: 9, content: "港鐵CEO一個月糧夠你搭十年車 佢唔痛唔癢" },
-      { postId: 9, content: "今朝遲到被扣$500 港鐵你賠唔賠？" },
-      { postId: 12, content: "巴打保重！錢可以再搵 人冇咗就乜都冇" },
-      { postId: 12, content: "快啲同老婆坦白 越遲越難收拾" },
-      { postId: 11, content: "即刻打999！如果隻狗有即時危險警察一定要處理" },
-      { postId: 11, content: "post上動物權益group啦 佢哋有律師幫手" },
-    ];
-
-    for (const c of mockComments) {
-      const id = this.nextCommentId++;
-      this.comments.set(id, {
-        id,
-        postId: c.postId,
-        nickname: generateNickname(),
-        content: c.content,
-        createdAt: new Date(Date.now() - Math.random() * 1000 * 60 * 60 * 24).toISOString(),
-        likes: Math.floor(Math.random() * 50),
-      });
-    }
+    // Generate AI persona comments for every post
+    this.posts.forEach((post, postId) => {
+      const aiComments = generatePersonaComments({ title: post.title, category: post.category }, 4);
+      for (const ac of aiComments) {
+        const id = this.nextCommentId++;
+        this.comments.set(id, {
+          id,
+          postId,
+          nickname: `${ac.avatar} ${ac.nickname}`,
+          content: ac.content,
+          createdAt: new Date(Date.now() - Math.random() * 1000 * 60 * 60 * 12).toISOString(),
+          likes: Math.floor(Math.random() * 500) + 10,
+          isAI: true,
+          aiPersona: ac.personaName,
+          aiAvatar: ac.avatar,
+        });
+      }
+    });
   }
 
   async getPosts(category?: string, search?: string): Promise<Post[]> {
