@@ -2,6 +2,7 @@ import type { Post, Comment, Category, Reactions, ReactionType, User, Session } 
 import { generateSummary } from "./summarizer";
 import { analyzeSentiment } from "./sentiment";
 import { recordSnapshot, calculateTrendScore, calculateTrendDirection } from "./trending";
+import { generateHotTake, generateDebate, generateClickbait } from "./ai-content";
 import crypto from "crypto";
 
 export interface IStorage {
@@ -61,7 +62,7 @@ export class MemStorage implements IStorage {
   }
 
   private seedMockData() {
-    const mockPosts: Omit<Post, "id" | "sentiment" | "trendDirection" | "trendScore">[] = [
+    const mockPosts: Omit<Post, "id" | "sentiment" | "trendDirection" | "trendScore" | "aiHotTake" | "aiClickbait" | "aiDebate">[] = [
       {
         title: "老細叫我OT到凌晨3點 第二日9點照返 仲話係「團隊精神」",
         content: "頂唔順喇真係！連續一個月每日OT到凌晨2-3點，第二朝9點照返工。問老細攞番啲補假，佢話「呢個就係startup嘅精神」「你唔肯捱就唔好做」。最離譜係佢自己每日5點準時收工！我份contract寫明朝9晚6，而家等於每日做18個鐘但得一份糧。想辭職但驚搵唔到工。有冇巴打試過勞工處投訴？有冇用？",
@@ -309,7 +310,10 @@ export class MemStorage implements IStorage {
       const id = this.nextPostId++;
       const summary = generateSummary(post.title, post.content);
       const sentiment = analyzeSentiment(post.title, post.content, post.heat, post.reactions);
-      const fullPost: Post = { ...post, id, summary, sentiment, trendDirection: "steady", trendScore: 0 };
+      const aiHotTake = generateHotTake({ title: post.title, content: post.content, category: post.category, sentiment });
+      const aiClickbait = generateClickbait({ title: post.title, category: post.category });
+      const aiDebate = generateDebate({ title: post.title, content: post.content, category: post.category });
+      const fullPost: Post = { ...post, id, summary, sentiment, trendDirection: "steady", trendScore: 0, aiHotTake, aiClickbait, aiDebate };
       recordSnapshot(fullPost);
       fullPost.trendScore = calculateTrendScore(fullPost);
       fullPost.trendDirection = calculateTrendDirection(fullPost);
@@ -526,6 +530,8 @@ export class MemStorage implements IStorage {
   async createPost(post: { title: string; content: string; category: string; userId: number }): Promise<Post> {
     const id = this.nextPostId++;
     const reactions = { fire: 0, cringe: 0, rofl: 0, dead: 0, chill: 0, rage: 0 };
+    const sentiment = analyzeSentiment(post.title, post.content, 50, reactions);
+    const postData = { title: post.title, content: post.content, category: post.category as Category, sentiment };
     const newPost: Post = {
       id,
       title: post.title,
@@ -539,9 +545,12 @@ export class MemStorage implements IStorage {
       createdAt: new Date().toISOString(),
       reactions,
       userId: post.userId,
-      sentiment: analyzeSentiment(post.title, post.content, 50, reactions),
+      sentiment,
       trendDirection: "up",
       trendScore: 0,
+      aiHotTake: generateHotTake(postData),
+      aiClickbait: generateClickbait({ title: post.title, category: post.category as Category }),
+      aiDebate: generateDebate({ title: post.title, content: post.content, category: post.category as Category }),
     };
     this.posts.set(id, newPost);
     // Increment user stats

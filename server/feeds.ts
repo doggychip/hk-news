@@ -3,6 +3,7 @@ import type { Post, Category, Reactions } from "@shared/schema";
 import { generateSummary } from "./summarizer";
 import { analyzeSentiment } from "./sentiment";
 import { calculateTrendScore, calculateTrendDirection } from "./trending";
+import { generateHotTake, generateDebate, generateClickbait } from "./ai-content";
 
 const parser = new RSSParser({
   timeout: 10000,
@@ -94,6 +95,7 @@ export async function fetchFeeds(): Promise<Omit<Post, "id">[]> {
         const reactions = generateReactions();
         const sentiment = analyzeSentiment(title, content || title, heat, reactions);
 
+        const postData = { title, content: content || title, category: source.category, sentiment };
         results.push({
           title,
           content: content || title,
@@ -109,6 +111,9 @@ export async function fetchFeeds(): Promise<Omit<Post, "id">[]> {
           sentiment,
           trendDirection: "steady" as const,
           trendScore: 0,
+          aiHotTake: generateHotTake(postData),
+          aiClickbait: generateClickbait({ title, category: source.category }),
+          aiDebate: generateDebate({ title, content: content || title, category: source.category }),
         });
       }
     } catch (error) {

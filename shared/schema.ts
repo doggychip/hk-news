@@ -42,7 +42,14 @@ export interface Post {
   sentiment: Sentiment;
   trendDirection: TrendDirection;
   trendScore: number;
+  aiHotTake: string;
+  aiClickbait: string;
+  aiDebate: { optimist: string; pessimist: string };
 }
+
+// Mood types for feed filtering
+export const MOODS = ["laugh", "angry", "popcorn", "chill", "cry"] as const;
+export type Mood = typeof MOODS[number];
 
 // Daily Briefing
 export interface BriefingCategory {

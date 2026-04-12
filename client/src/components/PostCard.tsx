@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { MessageSquare, Flame } from "lucide-react";
+import { MessageSquare, Flame, Bot, Sparkles } from "lucide-react";
 import type { Post, Reactions } from "@shared/schema";
 import { ReactionBar } from "./ReactionBar";
 import { SentimentBadge } from "./SentimentBadge";
@@ -75,6 +76,7 @@ interface PostCardProps {
 }
 
 export function PostCard({ post, index }: PostCardProps) {
+  const [showClickbait, setShowClickbait] = useState(false);
   const badgeClass = CATEGORY_BADGE[post.category] || "border-muted-foreground/30 text-muted-foreground bg-muted";
   const flair = getMemeFlair(post.reactions);
   const shitpost = isShitpost(post.reactions);
@@ -118,10 +120,33 @@ export function PostCard({ post, index }: PostCardProps) {
             </div>
           </div>
 
-          {/* Title */}
-          <h3 className="text-sm font-bold leading-snug mb-1.5 line-clamp-2 text-foreground">
-            {post.title}
-          </h3>
+          {/* Title — with clickbait toggle */}
+          <div className="flex items-start gap-1.5 mb-1.5">
+            <h3 className="text-sm font-bold leading-snug line-clamp-2 text-foreground flex-1">
+              {showClickbait && post.aiClickbait ? post.aiClickbait : post.title}
+            </h3>
+            {post.aiClickbait && (
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowClickbait(!showClickbait); }}
+                className={`flex-shrink-0 mt-0.5 p-1 rounded transition-all ${
+                  showClickbait ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"
+                }`}
+                title={showClickbait ? "睇返原標題" : "🤖 AI改標題"}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* AI Hot Take */}
+          {post.aiHotTake && (
+            <div className="flex items-start gap-1.5 mb-2 px-2 py-1.5 rounded bg-primary/5 border border-primary/10">
+              <Bot className="w-3 h-3 text-primary flex-shrink-0 mt-0.5" />
+              <p className="text-[11px] text-primary/80 font-medium leading-snug line-clamp-2">
+                {post.aiHotTake}
+              </p>
+            </div>
+          )}
 
           {/* Summary */}
           <p className="text-xs text-muted-foreground leading-relaxed mb-3 line-clamp-2">

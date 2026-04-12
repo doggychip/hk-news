@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronUp, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { Post } from "@shared/schema";
+import type { Post, Mood } from "@shared/schema";
 import { Logo } from "@/components/Logo";
 import { CategoryTabs } from "@/components/CategoryTabs";
 import { PostCard } from "@/components/PostCard";
@@ -15,6 +15,7 @@ import { AuthModal } from "@/components/AuthModal";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
 import { MemeOfTheDay } from "@/components/MemeOfTheDay";
 import { DailyBriefingCard } from "@/components/DailyBriefing";
+import { MoodFilter } from "@/components/MoodFilter";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -46,6 +47,7 @@ export default function HomePage() {
   const { user } = useAuth();
   const [category, setCategory] = useState("");
   const [search, setSearch] = useState("");
+  const [mood, setMood] = useState<Mood | null>(null);
   const [showScroll, setShowScroll] = useState(false);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
@@ -54,11 +56,12 @@ export default function HomePage() {
   const scrollCount = useRef(0);
 
   const { data: posts = [], isLoading } = useQuery<Post[]>({
-    queryKey: ["/api/posts", category, search],
+    queryKey: ["/api/posts", category, search, mood],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (category) params.set("category", category);
       if (search) params.set("search", search);
+      if (mood) params.set("mood", mood);
       const url = `/api/posts${params.toString() ? `?${params}` : ""}`;
       const res = await apiRequest("GET", url);
       return res.json();
@@ -123,6 +126,9 @@ export default function HomePage() {
 
       {/* AI Daily Briefing */}
       <DailyBriefingCard />
+
+      {/* AI Mood Filter */}
+      <MoodFilter selected={mood} onSelect={setMood} />
 
       {/* Meme of the Day */}
       <MemeOfTheDay />

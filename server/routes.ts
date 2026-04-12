@@ -3,8 +3,10 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { fetchFeeds } from "./feeds";
 import { insertCommentSchema, reactSchema, insertUserSchema, loginSchema, insertPostSchema } from "@shared/schema";
-import type { User } from "@shared/schema";
+import type { User, Mood } from "@shared/schema";
+import { MOODS } from "@shared/schema";
 import { generateBriefing, invalidateBriefingCache } from "./briefing";
+import { matchesMood } from "./ai-content";
 
 async function getAuthUser(req: any): Promise<User | null> {
   const auth = req.headers.authorization;
@@ -37,14 +39,18 @@ export async function registerRoutes(server: Server, app: Express) {
   // Initial feed fetch
   ensureFreshData();
 
-  // GET /api/posts - list posts with optional category filter
+  // GET /api/posts - list posts with optional category, search, mood filter
   app.get("/api/posts", async (req, res) => {
     await ensureFreshData();
-    const { category, search } = req.query;
-    const posts = await storage.getPosts(
+    const { category, search, mood } = req.query;
+    let posts = await storage.getPosts(
       category as string | undefined,
       search as string | undefined
     );
+    // Apply mood filter
+    if (mood && MOODS.includes(mood as Mood)) {
+      posts = posts.filter(p => matchesMood(p, mood as Mood));
+    }
     res.json(posts);
   });
 

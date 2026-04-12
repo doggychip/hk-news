@@ -5,8 +5,11 @@ import { motion } from "framer-motion";
 import type { Post } from "@shared/schema";
 import { ReactionBar } from "@/components/ReactionBar";
 import { CommentSection } from "@/components/CommentSection";
+import { AIDebatePanel } from "@/components/AIDebatePanel";
+import { SentimentBadge } from "@/components/SentimentBadge";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
 import { apiRequest } from "@/lib/queryClient";
+import { Bot } from "lucide-react";
 
 const CATEGORY_BADGE: Record<string, string> = {
   "熱門": "border-orange-500/50 text-orange-500 bg-orange-500/10",
@@ -115,6 +118,7 @@ export default function PostDetail() {
             <span className={`px-2 py-0.5 rounded text-[10px] font-bold border font-mono ${badgeClass}`}>
               {post.category}
             </span>
+            {post.sentiment && <SentimentBadge sentiment={post.sentiment} />}
             <span className="text-[10px] text-muted-foreground font-mono">
               {post.source} · {timeAgo(post.createdAt)}
             </span>
@@ -144,6 +148,24 @@ export default function PostDetail() {
           </div>
           <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">{post.summary}</p>
         </div>
+
+        {/* AI Hot Take */}
+        {post.aiHotTake && (
+          <div className="mb-4 flex items-start gap-2 px-4 py-3 rounded-lg bg-primary/5 border border-primary/20">
+            <Bot className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+            <div>
+              <span className="text-[10px] font-bold text-primary block mb-0.5">🤖 AI 毒舌評論</span>
+              <p className="text-sm text-primary/80 font-medium leading-snug">{post.aiHotTake}</p>
+            </div>
+          </div>
+        )}
+
+        {/* AI Debate */}
+        {post.aiDebate && (
+          <div className="mb-6">
+            <AIDebatePanel debate={post.aiDebate} />
+          </div>
+        )}
 
         {/* Full content */}
         <div className="mb-6" data-testid="post-content">
