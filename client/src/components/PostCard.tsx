@@ -1,29 +1,21 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { MessageSquare, Flame, Bot, Sparkles } from "lucide-react";
-import type { Post, Reactions } from "@shared/schema";
-import { ReactionBar } from "./ReactionBar";
+import { MessageSquare, ThumbsUp, ThumbsDown, Laugh, Share2, Sparkles, Bot } from "lucide-react";
+import type { Post } from "@shared/schema";
 import { SentimentBadge } from "./SentimentBadge";
-import { TrendIndicator } from "./TrendIndicator";
 import { Link } from "wouter";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
-const CATEGORY_BADGE: Record<string, string> = {
-  "熱門": "border-orange-500/50 text-orange-500 bg-orange-500/10",
-  "吹水": "border-pink-500/50 text-pink-500 bg-pink-500/10",
-  "娛樂": "border-purple-500/50 text-purple-500 bg-purple-500/10",
-  "時事": "border-red-500/50 text-red-500 bg-red-500/10",
-  "返工": "border-blue-500/50 text-blue-500 bg-blue-500/10",
-  "感情": "border-rose-500/50 text-rose-500 bg-rose-500/10",
-  "飲食": "border-amber-500/50 text-amber-500 bg-amber-500/10",
-  "科技": "border-cyan-500/50 text-cyan-500 bg-cyan-500/10",
+const CATEGORY_COLORS: Record<string, string> = {
+  "熱門": "text-orange-400",
+  "吹水": "text-pink-400",
+  "娛樂": "text-purple-400",
+  "時事": "text-red-400",
+  "返工": "text-blue-400",
+  "感情": "text-rose-400",
+  "飲食": "text-amber-400",
+  "科技": "text-cyan-400",
 };
-
-function getHeatColor(heat: number): string {
-  if (heat >= 90) return "text-red-500";
-  if (heat >= 75) return "text-orange-500";
-  if (heat >= 60) return "text-amber-500";
-  return "text-muted-foreground";
-}
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -38,36 +30,10 @@ function timeAgo(dateStr: string): string {
   return `${diffDays}日前`;
 }
 
-/** Compute meme flair based on reaction ratios */
-function getMemeFlair(reactions: Reactions): { emoji: string; label: string; color: string } | null {
-  const total = reactions.fire + reactions.cringe + reactions.rofl + reactions.dead + reactions.chill + reactions.rage;
-  if (total < 20) return null;
-
-  const ratios = {
-    fire: reactions.fire / total,
-    cringe: reactions.cringe / total,
-    rofl: reactions.rofl / total,
-    dead: reactions.dead / total,
-    chill: reactions.chill / total,
-    rage: reactions.rage / total,
-  };
-
-  if (ratios.rofl > 0.4) return { emoji: "😂", label: "SLDPK", color: "text-pink-500" };
-  if (ratios.dead > 0.4) return { emoji: "⚰️", label: "RIP", color: "text-purple-400" };
-  if (ratios.cringe > 0.35) return { emoji: "💩", label: "低質", color: "text-yellow-400" };
-  if (ratios.fire > 0.4) return { emoji: "🔥", label: "爆Post", color: "text-orange-500" };
-  if (ratios.chill > 0.4) return { emoji: "🐶", label: "Chill", color: "text-cyan-400" };
-  if (ratios.rage > 0.3) return { emoji: "🤬", label: "屌", color: "text-red-500" };
-  if (total > 200) return { emoji: "👀", label: "食花生", color: "text-amber-400" };
-  if (ratios.fire > 0.25 && total > 100) return { emoji: "🧠", label: "高質", color: "text-emerald-400" };
-  return null;
-}
-
-/** Check if post is a "shitpost" (high rofl+dead) */
-function isShitpost(reactions: Reactions): boolean {
-  const total = reactions.fire + reactions.cringe + reactions.rofl + reactions.dead + reactions.chill + reactions.rage;
-  if (total < 30) return false;
-  return (reactions.rofl + reactions.dead) / total > 0.5;
+function formatCount(n: number): string {
+  if (n >= 10000) return `${(n / 1000).toFixed(0)}k`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(n);
 }
 
 interface PostCardProps {
@@ -77,92 +43,170 @@ interface PostCardProps {
 
 export function PostCard({ post, index }: PostCardProps) {
   const [showClickbait, setShowClickbait] = useState(false);
-  const badgeClass = CATEGORY_BADGE[post.category] || "border-muted-foreground/30 text-muted-foreground bg-muted";
-  const flair = getMemeFlair(post.reactions);
-  const shitpost = isShitpost(post.reactions);
-  const isHot = post.heat > 90;
+  const [votes, setVotes] = useState({ up: 0, down: 0, laughs: 0 });
+  const [voted, setVoted] = useState<"up" | "down" | null>(null);
 
-  const cardClasses = [
-    "post-card block bg-card border border-card-border rounded-lg p-4 cursor-pointer",
-    shitpost ? "chaos-border" : "",
-    isHot ? "fire-aura" : "",
-  ].filter(Boolean).join(" ");
+  const totalReactions = post.reactions.fire + post.reactions.cringe + post.reactions.rofl +
+    post.reactions.dead + post.reactions.chill + post.reactions.rage;
+  const netScore = (post.reactions.fire + post.reactions.chill) - (post.reactions.cringe + post.reactions.rage) + votes.up - votes.down;
+
+  const handleVote = async (dir: "up" | "down", e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (voted === dir) return;
+    setVoted(dir);
+    setVotes(v => ({ ...v, [dir]: v[dir === "up" ? "up" : "down"] + 1 }));
+    try {
+      await apiRequest("POST", `/api/posts/${post.id}/react`, { type: dir === "up" ? "fire" : "cringe" });
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+    } catch {}
+  };
+
+  const handleLaugh = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setVotes(v => ({ ...v, laughs: v.laughs + 1 }));
+    try {
+      await apiRequest("POST", `/api/posts/${post.id}/react`, { type: "rofl" });
+    } catch {}
+  };
+
+  const displayTitle = showClickbait && post.aiClickbait ? post.aiClickbait : post.title;
+  const catColor = CATEGORY_COLORS[post.category] || "text-gray-400";
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.05 }}
+      transition={{ duration: 0.35, delay: index * 0.06 }}
+      className="mb-4"
     >
-      <Link href={`/post/${post.id}`}>
-        <div className={cardClasses} data-testid={`post-card-${post.id}`}>
-          {/* Top row: category + flair + source + time */}
-          <div className="flex items-center gap-2 mb-2">
-            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border font-mono ${badgeClass}`}>
-              {post.category}
-            </span>
-            {post.sentiment && <SentimentBadge sentiment={post.sentiment} />}
-            {flair && (
-              <span className={`meme-flair inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold ${flair.color} bg-current/10`} data-testid="meme-flair">
-                <span>{flair.emoji}</span>
-                <span>{flair.label}</span>
+      <div className="bg-card border border-card-border rounded-xl overflow-hidden">
+        {/* Meme Card Hero */}
+        <Link href={`/post/${post.id}`}>
+          <div className={`relative bg-gradient-to-br ${post.memeCard?.gradient || "from-gray-700 to-gray-900"} px-5 py-8 min-h-[180px] flex flex-col justify-center cursor-pointer`}>
+            {/* Category + sentiment badge */}
+            <div className="absolute top-3 left-3 flex items-center gap-1.5">
+              <span className={`text-[10px] font-bold font-mono ${catColor} bg-black/30 px-2 py-0.5 rounded-full`}>
+                {post.category}
               </span>
-            )}
-            <span className="text-[10px] text-muted-foreground font-mono">
-              {post.source} · {timeAgo(post.createdAt)}
-            </span>
-            <div className="ml-auto flex items-center gap-1.5">
-              {post.trendDirection && <TrendIndicator direction={post.trendDirection} score={post.trendScore} />}
-              <Flame className={`w-3 h-3 ${getHeatColor(post.heat)}`} />
-              <span className={`text-[11px] font-bold font-mono ${getHeatColor(post.heat)}`}>
-                {post.heat}
+              {post.sentiment && (
+                <span className="bg-black/30 rounded-full px-1.5 py-0.5">
+                  <SentimentBadge sentiment={post.sentiment} />
+                </span>
+              )}
+            </div>
+
+            {/* Time + source */}
+            <div className="absolute top-3 right-3">
+              <span className="text-[10px] font-mono text-white/50">
+                {post.source} · {timeAgo(post.createdAt)}
               </span>
             </div>
-          </div>
 
-          {/* Title — with clickbait toggle */}
-          <div className="flex items-start gap-1.5 mb-1.5">
-            <h3 className="text-sm font-bold leading-snug line-clamp-2 text-foreground flex-1">
-              {showClickbait && post.aiClickbait ? post.aiClickbait : post.title}
+            {/* Big emoji */}
+            <div className="text-5xl mb-3 opacity-90 drop-shadow-lg">
+              {post.memeCard?.emoji || "📰"}
+            </div>
+
+            {/* Meme text */}
+            <h3 className="text-lg font-black text-white leading-tight drop-shadow-md">
+              {post.memeCard?.topText || displayTitle}
             </h3>
+            {post.memeCard?.bottomText && (
+              <p className="text-base font-bold text-white/90 leading-tight mt-1 drop-shadow-md">
+                {post.memeCard.bottomText}
+              </p>
+            )}
+          </div>
+        </Link>
+
+        {/* AI Hot Take */}
+        <div className="px-4 py-2.5 border-b border-border/50">
+          <div className="flex items-start gap-2">
+            <Bot className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
+            <p className="text-[12px] text-primary/80 font-medium leading-snug line-clamp-2">
+              {post.aiHotTake}
+            </p>
             {post.aiClickbait && (
               <button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowClickbait(!showClickbait); }}
-                className={`flex-shrink-0 mt-0.5 p-1 rounded transition-all ${
-                  showClickbait ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"
+                className={`flex-shrink-0 p-0.5 rounded transition-all ${
+                  showClickbait ? "text-primary" : "text-muted-foreground hover:text-primary"
                 }`}
-                title={showClickbait ? "睇返原標題" : "🤖 AI改標題"}
+                title="🤖 AI改標題"
               >
                 <Sparkles className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
-
-          {/* AI Hot Take */}
-          {post.aiHotTake && (
-            <div className="flex items-start gap-1.5 mb-2 px-2 py-1.5 rounded bg-primary/5 border border-primary/10">
-              <Bot className="w-3 h-3 text-primary flex-shrink-0 mt-0.5" />
-              <p className="text-[11px] text-primary/80 font-medium leading-snug line-clamp-2">
-                {post.aiHotTake}
-              </p>
-            </div>
-          )}
-
-          {/* Summary */}
-          <p className="text-xs text-muted-foreground leading-relaxed mb-3 line-clamp-2">
-            {post.summary}
-          </p>
-
-          {/* Bottom row: comments + reactions */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <MessageSquare className="w-3 h-3" />
-              <span className="text-[10px] font-mono">{post.commentCount}</span>
-            </div>
-            <ReactionBar postId={post.id} reactions={post.reactions} size="sm" />
-          </div>
         </div>
-      </Link>
+
+        {/* Pinned top comment */}
+        {post.topComment && (
+          <div className="px-4 py-2 border-b border-border/50 bg-muted/20">
+            <p className="text-[11px] text-muted-foreground leading-snug line-clamp-1">
+              💬 {post.topComment}
+            </p>
+          </div>
+        )}
+
+        {/* 9GAG-style action bar */}
+        <div className="flex items-center justify-between px-3 py-2">
+          {/* Upvote / Score / Downvote */}
+          <div className="flex items-center gap-0.5">
+            <motion.button
+              whileTap={{ scale: 1.3 }}
+              onClick={(e) => handleVote("up", e)}
+              className={`p-2 rounded-lg transition-colors ${voted === "up" ? "text-emerald-500 bg-emerald-500/10" : "text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10"}`}
+            >
+              <ThumbsUp className="w-5 h-5" />
+            </motion.button>
+            <span className={`text-sm font-bold font-mono min-w-[2.5rem] text-center ${netScore > 0 ? "text-emerald-500" : netScore < 0 ? "text-red-400" : "text-muted-foreground"}`}>
+              {formatCount(netScore)}
+            </span>
+            <motion.button
+              whileTap={{ scale: 1.3 }}
+              onClick={(e) => handleVote("down", e)}
+              className={`p-2 rounded-lg transition-colors ${voted === "down" ? "text-red-400 bg-red-400/10" : "text-muted-foreground hover:text-red-400 hover:bg-red-400/10"}`}
+            >
+              <ThumbsDown className="w-5 h-5" />
+            </motion.button>
+          </div>
+
+          {/* Laugh button */}
+          <motion.button
+            whileTap={{ scale: 1.3 }}
+            onClick={handleLaugh}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-pink-500 hover:bg-pink-500/10 transition-colors"
+          >
+            <Laugh className="w-5 h-5" />
+            <span className="text-xs font-bold font-mono">{formatCount(post.reactions.rofl + votes.laughs)}</span>
+          </motion.button>
+
+          {/* Comments */}
+          <Link href={`/post/${post.id}`}>
+            <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer">
+              <MessageSquare className="w-5 h-5" />
+              <span className="text-xs font-bold font-mono">{post.commentCount}</span>
+            </div>
+          </Link>
+
+          {/* Share */}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (navigator.share) {
+                navigator.share({ title: post.title, url: window.location.origin + `/post/${post.id}` });
+              }
+            }}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          >
+            <Share2 className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
     </motion.div>
   );
 }

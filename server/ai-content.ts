@@ -1,4 +1,4 @@
-import type { Post, Sentiment } from "@shared/schema";
+import type { Post } from "@shared/schema";
 
 // ============================================================
 // AI Hot Take Generator — savage one-liner per post
@@ -263,6 +263,79 @@ export function matchesMood(post: Post, mood: Mood): boolean {
     default:
       return true;
   }
+}
+
+// ============================================================
+// Meme Card Generator — visual meme card per post
+// ============================================================
+
+const MEME_EMOJIS: Record<string, string[]> = {
+  "返工": ["💀", "🏃", "😤", "🔥", "⚰️", "🤡"],
+  "感情": ["💔", "🤡", "😭", "🔪", "👻", "💸"],
+  "飲食": ["🤮", "💰", "🍜", "🐀", "🤬", "🍿"],
+  "時事": ["🏚️", "🚇", "💀", "🤯", "📢", "😱"],
+  "科技": ["🤖", "💸", "📱", "🧠", "⚠️", "🔮"],
+  "娛樂": ["🎭", "🤡", "📺", "💩", "🎬", "😂"],
+  "吹水": ["🍿", "👀", "🤔", "😂", "🗣️", "💬"],
+};
+
+const GRADIENTS = [
+  "from-red-600 to-orange-500",
+  "from-purple-600 to-pink-500",
+  "from-blue-600 to-cyan-500",
+  "from-emerald-600 to-teal-500",
+  "from-amber-600 to-yellow-500",
+  "from-rose-600 to-red-500",
+  "from-indigo-600 to-purple-500",
+  "from-pink-600 to-rose-500",
+];
+
+const SENTIMENT_GRADIENTS: Record<string, string> = {
+  positive: "from-emerald-600 to-cyan-500",
+  negative: "from-red-700 to-rose-500",
+  neutral: "from-slate-600 to-gray-500",
+  explosive: "from-orange-600 via-red-500 to-pink-600",
+};
+
+function extractMemeText(title: string): { topText: string; bottomText: string } {
+  // Split title roughly in half at a natural break point
+  const mid = Math.floor(title.length / 2);
+  // Find nearest space/punctuation near midpoint
+  let splitAt = mid;
+  for (let i = mid; i < Math.min(mid + 15, title.length); i++) {
+    if (" ，。！？、".includes(title[i])) {
+      splitAt = i + 1;
+      break;
+    }
+  }
+  for (let i = mid; i > Math.max(mid - 15, 0); i--) {
+    if (" ，。！？、".includes(title[i])) {
+      splitAt = i + 1;
+      break;
+    }
+  }
+
+  const top = title.slice(0, splitAt).trim();
+  const bottom = title.slice(splitAt).trim();
+
+  // If split failed, just use the whole title
+  if (!bottom) return { topText: title, bottomText: "" };
+  return { topText: top, bottomText: bottom };
+}
+
+export function generateMemeCard(post: Pick<Post, "title" | "category" | "sentiment">): {
+  topText: string;
+  bottomText: string;
+  emoji: string;
+  gradient: string;
+} {
+  const hash = simpleHash(post.title);
+  const emojis = MEME_EMOJIS[post.category] || MEME_EMOJIS["吹水"];
+  const emoji = emojis[hash % emojis.length];
+  const gradient = SENTIMENT_GRADIENTS[post.sentiment] || GRADIENTS[hash % GRADIENTS.length];
+  const { topText, bottomText } = extractMemeText(post.title);
+
+  return { topText, bottomText, emoji, gradient };
 }
 
 // ============================================================

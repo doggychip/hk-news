@@ -116,6 +116,14 @@ export async function registerRoutes(server: Server, app: Express) {
     res.json(briefing);
   });
 
+  // GET /api/posts/shuffle - random order posts
+  app.get("/api/posts/shuffle", async (_req, res) => {
+    await ensureFreshData();
+    const posts = await storage.getPosts();
+    const shuffled = [...posts].sort(() => Math.random() - 0.5);
+    res.json(shuffled);
+  });
+
   // GET /api/trending/velocity - posts sorted by trend velocity
   app.get("/api/trending/velocity", async (_req, res) => {
     const posts = await storage.getPosts();

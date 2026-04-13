@@ -3,7 +3,7 @@ import type { Post, Category, Reactions } from "@shared/schema";
 import { generateSummary } from "./summarizer";
 import { analyzeSentiment } from "./sentiment";
 import { calculateTrendScore, calculateTrendDirection } from "./trending";
-import { generateHotTake, generateDebate, generateClickbait } from "./ai-content";
+import { generateHotTake, generateDebate, generateClickbait, generateMemeCard } from "./ai-content";
 
 const parser = new RSSParser({
   timeout: 10000,
@@ -114,6 +114,8 @@ export async function fetchFeeds(): Promise<Omit<Post, "id">[]> {
           aiHotTake: generateHotTake(postData),
           aiClickbait: generateClickbait({ title, category: source.category }),
           aiDebate: generateDebate({ title, content: content || title, category: source.category }),
+          memeCard: generateMemeCard({ title, category: source.category, sentiment }),
+          topComment: undefined,
         });
       }
     } catch (error) {

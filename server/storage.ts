@@ -2,7 +2,7 @@ import type { Post, Comment, Category, Reactions, ReactionType, User, Session } 
 import { generateSummary } from "./summarizer";
 import { analyzeSentiment } from "./sentiment";
 import { recordSnapshot, calculateTrendScore, calculateTrendDirection } from "./trending";
-import { generateHotTake, generateDebate, generateClickbait } from "./ai-content";
+import { generateHotTake, generateDebate, generateClickbait, generateMemeCard } from "./ai-content";
 import { generatePersonaComments } from "./ai-personas";
 import crypto from "crypto";
 
@@ -110,19 +110,26 @@ export class MemStorage implements IStorage {
 
       // Generate AI persona comments for each new post
       const aiComments = generatePersonaComments({ title: newPost.title, category: newPost.category }, 4);
+      let topLikes = 0;
       for (const ac of aiComments) {
         const cid = this.nextCommentId++;
+        const likes = Math.floor(Math.random() * 200) + 5;
         this.comments.set(cid, {
           id: cid,
           postId: id,
           nickname: `${ac.avatar} ${ac.nickname}`,
           content: ac.content,
           createdAt: new Date(Date.now() - Math.random() * 1000 * 60 * 60 * 6).toISOString(),
-          likes: Math.floor(Math.random() * 200) + 5,
+          likes,
           isAI: true,
           aiPersona: ac.personaName,
           aiAvatar: ac.avatar,
         });
+        // Track top comment for card preview
+        if (likes > topLikes) {
+          topLikes = likes;
+          newPost.topComment = `${ac.avatar} ${ac.nickname}: ${ac.content}`;
+        }
       }
       newPost.commentCount = aiComments.length;
       this.posts.set(id, newPost);
@@ -280,6 +287,7 @@ export class MemStorage implements IStorage {
       aiHotTake: generateHotTake(postData),
       aiClickbait: generateClickbait({ title: post.title, category: post.category as Category }),
       aiDebate: generateDebate({ title: post.title, content: post.content, category: post.category as Category }),
+      memeCard: generateMemeCard({ title: post.title, category: post.category as Category, sentiment }),
     };
     this.posts.set(id, newPost);
     // Increment user stats

@@ -45,6 +45,13 @@ export interface Post {
   aiHotTake: string;
   aiClickbait: string;
   aiDebate: { optimist: string; pessimist: string };
+  memeCard: {
+    topText: string;
+    bottomText: string;
+    emoji: string;
+    gradient: string;  // CSS gradient class
+  };
+  topComment?: string; // pinned AI comment for card preview
 }
 
 // Mood types for feed filtering
