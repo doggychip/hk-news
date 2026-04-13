@@ -4,6 +4,7 @@ import { generateSummary } from "./summarizer";
 import { analyzeSentiment } from "./sentiment";
 import { calculateTrendScore, calculateTrendDirection } from "./trending";
 import { generateHotTake, generateDebate, generateClickbait, generateMemeCard } from "./ai-content";
+import { generateAllPersonalityTakes } from "./ai-personalities";
 
 const parser = new RSSParser({
   timeout: 10000,
@@ -116,6 +117,7 @@ export async function fetchFeeds(): Promise<Omit<Post, "id">[]> {
           aiDebate: generateDebate({ title, content: content || title, category: source.category }),
           memeCard: generateMemeCard({ title, category: source.category, sentiment }),
           topComment: undefined,
+          aiPersonalityTakes: generateAllPersonalityTakes({ title, category: source.category }),
         });
       }
     } catch (error) {

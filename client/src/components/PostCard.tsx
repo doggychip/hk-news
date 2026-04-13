@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { MessageSquare, ThumbsUp, ThumbsDown, Laugh, Share2, Sparkles, Bot } from "lucide-react";
-import type { Post } from "@shared/schema";
+import { MessageSquare, ThumbsUp, ThumbsDown, Laugh, Share2, RefreshCw, Bot } from "lucide-react";
+import type { Post, Personality } from "@shared/schema";
 import { SentimentBadge } from "./SentimentBadge";
+import { AIPoll } from "./AIPoll";
+import { useTypewriter } from "@/hooks/useTypewriter";
 import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -39,23 +41,30 @@ function formatCount(n: number): string {
 interface PostCardProps {
   post: Post;
   index: number;
+  personality: Personality;
 }
 
-export function PostCard({ post, index }: PostCardProps) {
-  const [showClickbait, setShowClickbait] = useState(false);
+export function PostCard({ post, index, personality }: PostCardProps) {
   const [votes, setVotes] = useState({ up: 0, down: 0, laughs: 0 });
   const [voted, setVoted] = useState<"up" | "down" | null>(null);
+  const [takeIndex, setTakeIndex] = useState(0);
 
-  const totalReactions = post.reactions.fire + post.reactions.cringe + post.reactions.rofl +
-    post.reactions.dead + post.reactions.chill + post.reactions.rage;
+  // Get the current AI take based on personality + takeIndex
+  const takes = post.aiPersonalityTakes?.[personality] || [post.aiHotTake];
+  const currentTake = takes[takeIndex % takes.length] || post.aiHotTake;
+
+  // Typing animation for AI take
+  const displayedTake = useTypewriter(currentTake, 25, true);
+
   const netScore = (post.reactions.fire + post.reactions.chill) - (post.reactions.cringe + post.reactions.rage) + votes.up - votes.down;
+  const catColor = CATEGORY_COLORS[post.category] || "text-gray-400";
 
   const handleVote = async (dir: "up" | "down", e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (voted === dir) return;
     setVoted(dir);
-    setVotes(v => ({ ...v, [dir]: v[dir === "up" ? "up" : "down"] + 1 }));
+    setVotes(v => ({ ...v, [dir]: v[dir] + 1 }));
     try {
       await apiRequest("POST", `/api/posts/${post.id}/react`, { type: dir === "up" ? "fire" : "cringe" });
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
@@ -71,8 +80,11 @@ export function PostCard({ post, index }: PostCardProps) {
     } catch {}
   };
 
-  const displayTitle = showClickbait && post.aiClickbait ? post.aiClickbait : post.title;
-  const catColor = CATEGORY_COLORS[post.category] || "text-gray-400";
+  const handleRegenerate = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setTakeIndex(i => i + 1);
+  };
 
   return (
     <motion.div
@@ -85,7 +97,6 @@ export function PostCard({ post, index }: PostCardProps) {
         {/* Meme Card Hero */}
         <Link href={`/post/${post.id}`}>
           <div className={`relative bg-gradient-to-br ${post.memeCard?.gradient || "from-gray-700 to-gray-900"} px-5 py-8 min-h-[180px] flex flex-col justify-center cursor-pointer`}>
-            {/* Category + sentiment badge */}
             <div className="absolute top-3 left-3 flex items-center gap-1.5">
               <span className={`text-[10px] font-bold font-mono ${catColor} bg-black/30 px-2 py-0.5 rounded-full`}>
                 {post.category}
@@ -96,22 +107,16 @@ export function PostCard({ post, index }: PostCardProps) {
                 </span>
               )}
             </div>
-
-            {/* Time + source */}
             <div className="absolute top-3 right-3">
               <span className="text-[10px] font-mono text-white/50">
                 {post.source} · {timeAgo(post.createdAt)}
               </span>
             </div>
-
-            {/* Big emoji */}
             <div className="text-5xl mb-3 opacity-90 drop-shadow-lg">
               {post.memeCard?.emoji || "📰"}
             </div>
-
-            {/* Meme text */}
             <h3 className="text-lg font-black text-white leading-tight drop-shadow-md">
-              {post.memeCard?.topText || displayTitle}
+              {post.memeCard?.topText || post.title}
             </h3>
             {post.memeCard?.bottomText && (
               <p className="text-base font-bold text-white/90 leading-tight mt-1 drop-shadow-md">
@@ -121,24 +126,25 @@ export function PostCard({ post, index }: PostCardProps) {
           </div>
         </Link>
 
-        {/* AI Hot Take */}
+        {/* AI Hot Take with typing animation + regenerate */}
         <div className="px-4 py-2.5 border-b border-border/50">
           <div className="flex items-start gap-2">
             <Bot className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
-            <p className="text-[12px] text-primary/80 font-medium leading-snug line-clamp-2">
-              {post.aiHotTake}
+            <p className="text-[12px] text-primary/80 font-medium leading-snug flex-1 min-h-[2em]">
+              {displayedTake}
+              {displayedTake.length < currentTake.length && (
+                <span className="inline-block w-1.5 h-3.5 bg-primary/60 ml-0.5 animate-pulse" />
+              )}
             </p>
-            {post.aiClickbait && (
-              <button
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowClickbait(!showClickbait); }}
-                className={`flex-shrink-0 p-0.5 rounded transition-all ${
-                  showClickbait ? "text-primary" : "text-muted-foreground hover:text-primary"
-                }`}
-                title="🤖 AI改標題"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-              </button>
-            )}
+            {/* Regenerate button */}
+            <motion.button
+              whileTap={{ rotate: 180, scale: 1.2 }}
+              onClick={handleRegenerate}
+              className="flex-shrink-0 p-1 rounded text-muted-foreground hover:text-primary transition-colors"
+              title="換一個 AI 觀點"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </motion.button>
           </div>
         </div>
 
@@ -151,9 +157,11 @@ export function PostCard({ post, index }: PostCardProps) {
           </div>
         )}
 
+        {/* AI vs User Poll */}
+        <AIPoll postId={post.id} sentiment={post.sentiment} />
+
         {/* 9GAG-style action bar */}
-        <div className="flex items-center justify-between px-3 py-2">
-          {/* Upvote / Score / Downvote */}
+        <div className="flex items-center justify-between px-3 py-2 border-t border-border/50">
           <div className="flex items-center gap-0.5">
             <motion.button
               whileTap={{ scale: 1.3 }}
@@ -174,7 +182,6 @@ export function PostCard({ post, index }: PostCardProps) {
             </motion.button>
           </div>
 
-          {/* Laugh button */}
           <motion.button
             whileTap={{ scale: 1.3 }}
             onClick={handleLaugh}
@@ -184,7 +191,6 @@ export function PostCard({ post, index }: PostCardProps) {
             <span className="text-xs font-bold font-mono">{formatCount(post.reactions.rofl + votes.laughs)}</span>
           </motion.button>
 
-          {/* Comments */}
           <Link href={`/post/${post.id}`}>
             <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer">
               <MessageSquare className="w-5 h-5" />
@@ -192,7 +198,6 @@ export function PostCard({ post, index }: PostCardProps) {
             </div>
           </Link>
 
-          {/* Share */}
           <button
             onClick={(e) => {
               e.preventDefault();

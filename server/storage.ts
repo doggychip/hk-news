@@ -3,6 +3,7 @@ import { generateSummary } from "./summarizer";
 import { analyzeSentiment } from "./sentiment";
 import { recordSnapshot, calculateTrendScore, calculateTrendDirection } from "./trending";
 import { generateHotTake, generateDebate, generateClickbait, generateMemeCard } from "./ai-content";
+import { generateAllPersonalityTakes } from "./ai-personalities";
 import { generatePersonaComments } from "./ai-personas";
 import crypto from "crypto";
 
@@ -288,6 +289,7 @@ export class MemStorage implements IStorage {
       aiClickbait: generateClickbait({ title: post.title, category: post.category as Category }),
       aiDebate: generateDebate({ title: post.title, content: post.content, category: post.category as Category }),
       memeCard: generateMemeCard({ title: post.title, category: post.category as Category, sentiment }),
+      aiPersonalityTakes: generateAllPersonalityTakes({ title: post.title, category: post.category as Category }),
     };
     this.posts.set(id, newPost);
     // Increment user stats

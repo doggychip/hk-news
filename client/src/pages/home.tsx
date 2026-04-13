@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronUp, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { Post, Mood } from "@shared/schema";
+import type { Post, Mood, Personality } from "@shared/schema";
 import { Logo } from "@/components/Logo";
 import { FeedTabs, type FeedMode } from "@/components/FeedTabs";
 import { PostCard } from "@/components/PostCard";
@@ -13,6 +13,7 @@ import { UserMenu } from "@/components/UserMenu";
 import { CreatePostModal } from "@/components/CreatePostModal";
 import { AuthModal } from "@/components/AuthModal";
 import { MoodFilter } from "@/components/MoodFilter";
+import { PersonalitySelector } from "@/components/PersonalitySelector";
 import { DailyBriefingCard } from "@/components/DailyBriefing";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest } from "@/lib/queryClient";
@@ -40,6 +41,9 @@ function getRandomItem<T>(arr: T[]): T {
 export default function HomePage() {
   const { user } = useAuth();
   const [feedMode, setFeedMode] = useState<FeedMode>("hot");
+  const [personality, setPersonality] = useState<Personality>(() => {
+    return (localStorage.getItem("hknews-personality") as Personality) || "savage";
+  });
   const [mood, setMood] = useState<Mood | null>(null);
   const [search, setSearch] = useState("");
   const [visibleCount, setVisibleCount] = useState(10);
@@ -130,6 +134,9 @@ export default function HomePage() {
       {/* AI Briefing */}
       <DailyBriefingCard />
 
+      {/* AI Personality Selector */}
+      <PersonalitySelector selected={personality} onSelect={(p) => { setPersonality(p); localStorage.setItem("hknews-personality", p); }} />
+
       {/* Mood Filter */}
       <MoodFilter selected={mood} onSelect={setMood} />
 
@@ -166,7 +173,7 @@ export default function HomePage() {
         ) : (
           <>
             {posts.slice(0, visibleCount).map((post, i) => (
-              <PostCard key={post.id} post={post} index={i} />
+              <PostCard key={post.id} post={post} index={i} personality={personality} />
             ))}
 
             {posts.length > visibleCount ? (

@@ -49,10 +49,19 @@ export interface Post {
     topText: string;
     bottomText: string;
     emoji: string;
-    gradient: string;  // CSS gradient class
+    gradient: string;
   };
-  topComment?: string; // pinned AI comment for card preview
+  topComment?: string;
+  aiPersonalityTakes: {
+    savage: string[];
+    professor: string[];
+    mama: string[];
+    conspiracy: string[];
+    genz: string[];
+  };
 }
+
+export type Personality = "savage" | "professor" | "mama" | "conspiracy" | "genz";
 
 // Mood types for feed filtering
 export const MOODS = ["laugh", "angry", "popcorn", "chill", "cry"] as const;
